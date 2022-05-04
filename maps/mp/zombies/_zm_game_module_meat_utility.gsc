@@ -543,7 +543,7 @@ item_meat_spawn( origin )
 	org = origin;
 	player = get_players()[0];
 	player._spawning_meat = 1;
-	player magicgrenadetype( get_gamemode_var( "item_meat_name" ), org, ( 0, 0, 0 ) );
+	level.the_meat = player magicgrenadetype( get_gamemode_var( "item_meat_name" ), org, ( 0, 0, 0 ) );
 	playsoundatposition( "zmb_spawn_powerup", org );
 	wait 0.1;
 	player._spawning_meat = undefined;

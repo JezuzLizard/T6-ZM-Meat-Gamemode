@@ -20,7 +20,15 @@ main()
 {
 	replaceFunc( maps\mp\zombies\_zm::player_monitor_time_played, ::player_monitor_time_played_override );
 	replaceFunc( maps\mp\gametypes_zm\_zm_gametype::round_logic, ::round_logic_override );
-	setmatchflag( "disableIngameMenu", 0 );
+	replaceFunc( maps\mp\zombies\_zm_stats::initializeMatchStats, ::initializeMatchStats_override );
+	replaceFunc( maps\mp\zombies\_zm_utility::track_players_intersection_tracker, ::track_players_intersection_tracker_override );
+	replaceFunc( maps\mp\_utility::setclientfieldtoplayer, ::setclientfieldtoplayer_override );
+	replaceFunc( maps\mp\_visionset_mgr::update_clientfields, ::update_clientfields_override );
+	replaceFunc( maps\mp\zombies\_zm::watch_rampage_bookmark, ::watch_rampage_bookmark_override );
+	//replaceFunc( maps\mp\gametypes_zm\_globallogic::updategametypedvars, ::updategametypedvars_override );
+	level.zm_disable_recording_stats = true;
+	game[ "gamestarted" ] = undefined;
+	level.timelimitoverride = true;
 	print( "running zmeat.gsc" );
 	maps\mp\gametypes_zm\_zm_gametype::main();
 	registerclientfield( "allplayers", "holding_meat", 7000, 1, "int" );
@@ -82,6 +90,7 @@ onprecachegametype()
 	precachemodel( "p6_zm_sign_meat_01_step2" );
 	precachemodel( "p6_zm_sign_meat_01_step3" );
 	precachemodel( "p6_zm_sign_meat_01_step4" );
+	level thread spawn_side_trigger();
 }
 
 meat_hub_start_func()
@@ -122,11 +131,6 @@ meat_hub_start_func()
 	setteamhasmeat( "axis", 0 );
 	level thread zmbmusicsetupmeat();
 	level.zombie_spawn_fx = level._effect["spawn_cloud"];
-	weapon_spawns = getentarray( "weapon_upgrade", "targetname" );
-
-	for ( i = 0; i < weapon_spawns.size; i++ )
-		weapon_spawns[i] trigger_off();
-
 	level thread monitor_meat_on_side();
 	level thread item_meat_watch_for_throw();
 	level thread hold_meat_monitor();
@@ -292,18 +296,35 @@ monitor_meat_on_side()
 	{
 		if ( isdefined( level.item_meat ) )
 		{
-			if ( !isdefined( level._meat_team_1_volume ) || !isdefined( level._meat_team_2_volume ) )
-				iprintlnbold( "BUG: There is something wrong with the team volumes" );
+			// if ( !isdefined( level._meat_team_1_volume ) || !isdefined( level._meat_team_2_volume ) )
+			// 	iprintlnbold( "BUG: There is something wrong with the team volumes" );
 
-			if ( isdefined( level._meat_team_1_volume ) && level.item_meat istouching( level._meat_team_1_volume ) )
+			// if ( isdefined( level._meat_team_1_volume ) && level.item_meat istouching( level._meat_team_1_volume ) )
+			// {
+			// 	level._meat_on_team = 1;
+			// 	level.meat_lost_time = undefined;
+			// }
+			// else if ( isdefined( level._meat_team_2_volume ) && level.item_meat istouching( level._meat_team_2_volume ) )
+			// {
+			// 	level._meat_on_team = 2;
+			// 	level.meat_lost_time = undefined;
+			// }
+			if ( is_true( level.meat_touched_middle_volume ) )
 			{
-				level._meat_on_team = 1;
-				level.meat_lost_time = undefined;
-			}
-			else if ( isdefined( level._meat_team_2_volume ) && level.item_meat istouching( level._meat_team_2_volume ) )
-			{
-				level._meat_on_team = 2;
-				level.meat_lost_time = undefined;
+				level.meat_touched_middle_volume = false;
+				if ( isDefined( level._meat_on_team ) )
+				{
+					iPrintLnBold( "Meat switched sides new team = " + level._meat_on_team );
+					if ( level._meat_on_team == 1 )
+					{
+						level._meat_on_team = 2;
+					}
+					else 
+					{
+						level._meat_on_team = 1;
+					}
+					level.meat_lost_time = undefined;
+				}
 			}
 			else if ( isdefined( last_team ) )
 			{
@@ -415,16 +436,6 @@ hold_meat_monitor()
 meat_zombie_post_spawn_init()
 {
 
-}
-
-create_item_meat_watcher()
-{
-	wait 0.05;
-	watcher = self maps\mp\gametypes_zm\_weaponobjects::createuseweaponobjectwatcher( "item_meat", get_gamemode_var( "item_meat_name" ), self.team );
-	watcher.pickup = ::item_meat_on_pickup;
-	watcher.onspawn = ::item_meat_spawned;
-	watcher.onspawnretrievetriggers = ::play_item_meat_on_spawn_retrieve_trigger;
-	watcher.headicon = 0;
 }
 
 item_meat_spawned( unused0, unused1 )
@@ -633,7 +644,7 @@ animate_meat( grenade )
 		altmodel useanimtree( -1 );
 		altmodel.angles = grenade.angles;
 		altmodel linkto( grenade, "", ( 0, 0, 0 ), ( 0, 0, 0 ) );
-		altmodel setanim( %o_zombie_head_idle_v1 );
+		//altmodel setanim( %o_zombie_head_idle_v1 );
 		grenade.altmodel = altmodel;
 
 		while ( isdefined( grenade ) )
@@ -828,6 +839,10 @@ spike_the_meat( meat )
 		grenade._fake_meat = 1;
 		grenade thread delete_on_real_meat_pickup();
 		level._kicked_meat = grenade;
+	}
+	else 
+	{
+		level.the_meat = grenade;
 	}
 
 	wait 0.1;
@@ -1153,6 +1168,10 @@ kick_the_meat( meat, laststand_nudge )
 		grenade thread delete_on_real_meat_pickup();
 		level._kicked_meat = grenade;
 	}
+	else 
+	{
+		level.the_meat = grenade;
+	}
 
 	wait 0.1;
 	self._spawning_meat = 0;
@@ -1179,11 +1198,6 @@ delete_on_real_meat_pickup()
 
 	if ( isdefined( self ) )
 		self cleanup_meat();
-}
-
-play_item_meat_on_spawn_retrieve_trigger( watcher, player )
-{
-	self item_meat_on_spawn_retrieve_trigger( watcher, player, get_gamemode_var( "item_meat_name" ) );
 }
 
 can_revive( revivee )
@@ -1247,6 +1261,7 @@ start_encounters_round_logic()
 onstartgametype()
 {
 	print( "running zmeat.gsc onstartgametype" );
+	setmatchflag( "disableIngameMenu", 0 );
 	thread start_encounters_round_logic();
 	maps\mp\gametypes_zm\_zm_gametype::rungametypemain( "zmeat", ::meat_hub_start_func, 1 );
 }
@@ -1546,7 +1561,7 @@ meat_player_initial_spawn()
 	}
 
 	waittillframeend;
-	maps\mp\gametypes_zm\_zm_gametype::start_round();
+	start_round();
 	award_grenades_for_team( 1 );
 	award_grenades_for_team( 2 );
 }
@@ -2146,8 +2161,8 @@ reset_meat_when_player_downed()
 	self waittill_any( "player_downed", "death", "fake_death", "replace_weapon_powerup" );
 	self._has_meat = 0;
 	self._spawning_meat = 1;
-	grenade = self magicgrenadetype( get_gamemode_var( "item_meat_name" ), self.origin + ( randomintrange( 5, 10 ), randomintrange( 5, 10 ), 15 ), ( randomintrange( 5, 10 ), randomintrange( 5, 10 ), 0 ) );
-	grenade._respawned_meat = 1;
+	level.the_meat = self magicgrenadetype( get_gamemode_var( "item_meat_name" ), self.origin + ( randomintrange( 5, 10 ), randomintrange( 5, 10 ), 15 ), ( randomintrange( 5, 10 ), randomintrange( 5, 10 ), 0 ) );
+	level.the_meat._respawned_meat = 1;
 	level._last_person_to_throw_meat = undefined;
 	playsoundatposition( "zmb_spawn_powerup", self.origin );
 	wait 0.1;
@@ -2182,10 +2197,10 @@ item_meat_drop( org, team )
 		player = players[0];
 		player endon( "disconnect" );
 		player._spawning_meat = 1;
-		grenade = player magicgrenadetype( get_gamemode_var( "item_meat_name" ), org + ( randomintrange( 5, 10 ), randomintrange( 5, 10 ), 15 ), ( 0, 0, 0 ) );
-		grenade._respawned_meat = 1;
+		level.the_meat = player magicgrenadetype( get_gamemode_var( "item_meat_name" ), org + ( randomintrange( 5, 10 ), randomintrange( 5, 10 ), 15 ), ( 0, 0, 0 ) );
+		level.the_meat._respawned_meat = 1;
 		level._last_person_to_throw_meat = undefined;
-		playsoundatposition( "zmb_spawn_powerup", grenade.origin );
+		playsoundatposition( "zmb_spawn_powerup", level.the_meat.origin );
 		wait 0.1;
 		player._spawning_meat = undefined;
 		level notify( "meat_reset" );
@@ -2246,7 +2261,10 @@ player_watch_grenade_throw()
 		{
 			add_meat_event( "player_grenade_fire", self, weapon );
 			weapon thread item_meat_on_spawn_retrieve_trigger( undefined, self, get_gamemode_var( "item_meat_name" ) );
+			weapon.is_meat = true;
+			level.the_meat = weapon;
 		}
+		//jsonDump( va( "%s_%s_%s_%s", weapname, getDvar( "g_gametype" ), getDvar( "ui_zm_mapstartlocation" ), getDvar( "mapname" ) ), weapon );
 	}
 }
 
@@ -2347,6 +2365,54 @@ handle_meat_event( event )
 #/
 }
 
+spawn_side_trigger()
+{
+	switch ( getDvar( "ui_zm_mapstartlocation" ) )
+	{
+		case "town":
+			origin = ( 1431.62, -388.542, -78.5244 );
+			angles = ( 0, -146.464, 0  );
+			width = 20;
+			height = 1000;
+			length = distance2D( ( 1120.44, 11.2665, -28.0667 ), ( 1673.39, -710.099, -18.813 ) );
+			break;
+	}
+	trigger = spawn( "trigger_box", origin, 0, width, length, height );
+	trigger.angles = angles;
+	//trigger thread debug_trigger();
+	trigger thread switch_team_has_meat_on_trigger();
+}
+
+// debug_trigger()
+// {
+// 	while ( true )
+// 	{
+// 		self waittill( "trigger", ent );
+// 		if ( isPlayer( ent ) )
+// 		{
+// 			ent iPrintLn( "Player is touching trigger" );
+// 		}
+// 		else if ( is_true( ent.is_meat ) )
+// 		{
+// 			level iPrintLn( "Meat is touching trigger" );
+// 		}
+// 		jsonDump( va( "%s_%s_%s_%s", ent.classname, getDvar( "g_gametype" ), getDvar( "ui_zm_mapstartlocation" ), getDvar( "mapname" ) ), ent );
+// 		wait 1;
+// 	}
+// }
+
+switch_team_has_meat_on_trigger()
+{
+	while ( true )
+	{
+		if ( isDefined( level.the_meat ) && level.the_meat isTouching( self ) )
+		{
+			level.meat_touched_middle_volume = true;
+		}
+		wait 0.1;
+	}
+}
+
 startnextzmround_override( winner )
 {
 	if ( !isonezmround() )
@@ -2378,13 +2444,56 @@ player_monitor_time_played_override()
 	return;
 }
 
+initializeMatchStats_override()
+{
+	return;
+}
+
+track_players_intersection_tracker_override()
+{
+	return;
+}
+
+setclientfieldtoplayer_override( field_name, value )
+{
+	if ( !isDefined( self ) || !isPlayer( self ) || !isDefined( field_name ) || !isDefined( value ) )
+	{
+		return;
+	}
+	codesetplayerstateclientfield( self, field_name, value );
+}
+
+update_clientfields_override( player, type_struct )
+{
+	if ( !isDefined( player ) || !isPlayer( player ) || !isDefined( type_struct ) )
+	{
+		return;
+	}
+    name = player get_first_active_name( type_struct );
+    player setclientfieldtoplayer( type_struct.cf_slot_name, type_struct.info[name].slot_index );
+
+    if ( 1 < type_struct.cf_lerp_bit_count )
+        player setclientfieldtoplayer( type_struct.cf_lerp_name, type_struct.info[name].state.players[player._player_entnum].lerp );
+}
+
+watch_rampage_bookmark_override()
+{
+	return;
+}
+
+updategametypedvars_override()
+{
+	return;
+}
+
+
 round_logic_override( mode_logic_func )
 {
 	level.skit_vox_override = 1;
 
 	if ( isdefined( level.flag["start_zombie_round_logic"] ) )
 		flag_wait( "start_zombie_round_logic" );
-
+	flag_wait( "initial_blackscreen_passed" );
 	flag_wait( "start_encounters_match_logic" );
 
 	if ( !isdefined( game["gamemode_match"]["rounds"] ) )
@@ -2436,17 +2545,6 @@ round_logic_override( mode_logic_func )
 	{
 		[[ level._setteamscore ]]( "allies", get_gamemode_var( "team_2_score" ) );
 		[[ level._setteamscore ]]( "axis", get_gamemode_var( "team_1_score" ) );
-
-		if ( get_gamemode_var( "team_1_score" ) == get_gamemode_var( "team_2_score" ) )
-		{
-			level thread maps\mp\zombies\_zm_audio::zmbvoxcrowdonteam( "win" );
-			level thread maps\mp\zombies\_zm_audio_announcer::announceroundwinner( "tied" );
-		}
-		else
-		{
-			level thread maps\mp\zombies\_zm_audio::zmbvoxcrowdonteam( "win", winner, "lose" );
-			level thread maps\mp\zombies\_zm_audio_announcer::announceroundwinner( winner );
-		}
 	}
 
 	level thread delete_corpses();
@@ -2456,7 +2554,7 @@ round_logic_override( mode_logic_func )
 	if ( startnextzmround_override( winner ) )
 	{
 		level clientnotify( "gme" );
-		exitLevel( 1 );
+		exitLevel( 0 );
 		while ( true )
 			wait 1;
 	}
@@ -2481,4 +2579,54 @@ round_logic_override( mode_logic_func )
 	maps\mp\zombies\_zm::intermission();
 	level.can_revive_game_module = undefined;
 	level notify( "end_game" );
+}
+
+start_round()
+{
+	flag_clear( "start_encounters_match_logic" );
+	flag_wait( "initial_blackscreen_passed" );
+	if ( !isdefined( level._module_round_hud ) )
+	{
+		level._module_round_hud = newhudelem();
+		level._module_round_hud.x = 0;
+		level._module_round_hud.y = 70;
+		level._module_round_hud.alignx = "center";
+		level._module_round_hud.horzalign = "center";
+		level._module_round_hud.vertalign = "middle";
+		level._module_round_hud.font = "default";
+		level._module_round_hud.fontscale = 2.3;
+		level._module_round_hud.color = ( 1, 1, 1 );
+		level._module_round_hud.foreground = 1;
+		level._module_round_hud.sort = 0;
+	}
+
+	players = get_players();
+
+	for ( i = 0; i < players.size; i++ )
+		players[i] freeze_player_controls( 1 );
+
+	level._module_round_hud.alpha = 1;
+	label = &"Next Round Starting In  ^2";
+	level._module_round_hud.label = label;
+	level._module_round_hud settimer( 3 );
+	level thread maps\mp\zombies\_zm_audio_announcer::leaderdialog( "countdown" );
+	level thread maps\mp\zombies\_zm_audio::zmbvoxcrowdonteam( "clap" );
+	level thread maps\mp\zombies\_zm_audio::change_zombie_music( "round_start" );
+	level notify( "start_fullscreen_fade_out" );
+	wait 2;
+	level._module_round_hud fadeovertime( 1 );
+	level._module_round_hud.alpha = 0;
+	wait 1;
+	level thread play_sound_2d( "zmb_air_horn" );
+	players = get_players();
+
+	for ( i = 0; i < players.size; i++ )
+	{
+		players[i] freeze_player_controls( 0 );
+		players[i] sprintuprequired();
+	}
+
+	flag_set( "start_encounters_match_logic" );
+	flag_clear( "pregame" );
+	level._module_round_hud destroy();
 }

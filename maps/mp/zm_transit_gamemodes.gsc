@@ -54,6 +54,49 @@ init()
 //	add_map_location_gamemode("zcleansed", "cornfield", maps\mp\zm_transit_turned_cornfield::precache, maps\mp\zm_transit_turned_cornfield::main);
 //	add_map_location_gamemode("zcleansed", "diner", maps\mp\zm_transit_turned_diner::precache, maps\mp\zm_transit_turned_diner::main);
 //	add_map_location_gamemode("zcleansed", "town", maps\mp\zm_transit_turned_town::precache, maps\mp\zm_transit_turned_town::main);
+
+	scripts\zm\_gametype_setup::add_struct_location_gamemode_func( "zmeat", "town", ::zmeat_town_struct_init );
+}
+
+zmeat_town_struct_init()
+{
+	level.struct_class_names[ "script_noteworthy" ][ "initial_spawn" ] = [];
+	level.struct_class_names[ "targetname" ][ "player_respawn_point" ] = [];
+	coordinates_team1 = array( ( 1098.57, -172.707, -48.5673 ), ( 1225.5, -448.194, -61.875 ), ( 1332.15, -611.788, -61.1024 ), ( 1544.77, -725.784, -54.5458 ) );
+	angles_team1 = array( ( 0, 30.6696, 0 ), ( 0, 31.1914, 0 ), ( 0, 41.1835, 0 ), ( 0, 98.2959, 0 ) );
+	for ( i = 0; i < coordinates_team1.size; i++ )
+	{
+		register_map_initial_spawnpoint( coordinates_team1[ i ], angles_team1[ i ], 1 );
+	}
+	coordinates_team2 = array( ( 1322.92, -4.02464, -61.875 ), ( 1479.94, -164.92, -61.875 ), ( 1682.14, -322.66, -61.875 ), ( 1716.55, -510.453, -54.7499 ) );
+	angles_team2 = array( ( 0, -133.95, 0 ), ( 0, -138.086, 0 ), ( 0, -149.803, 0 ), ( 0, -158.592, 0 ) );
+	for ( i = 0; i < coordinates_team2.size; i++ )
+	{
+		register_map_initial_spawnpoint( coordinates_team2[ i ], angles_team2[ i ], 2 );
+	}
+}
+
+register_map_initial_spawnpoint( spawnpoint_coordinates, spawnpoint_angles, script_int )
+{
+	spawnpoint_struct = spawnStruct();
+	spawnpoint_struct.origin = spawnpoint_coordinates;
+	if ( isDefined( spawnpoint_angles ) )
+	{
+		spawnpoint_struct.angles = spawnpoint_angles;
+	}
+	else 
+	{
+		spawnpoint_struct.angles = ( 0, 0, 0 );
+	}
+	spawnpoint_struct.radius = 32;
+	spawnpoint_struct.script_noteworthy = "initial_spawn";
+	spawnpoint_struct.script_int = script_int;
+	spawnpoint_struct.script_string = getDvar( "g_gametype" ) + "_" + getDvar( "ui_zm_mapstartlocation" );
+	spawnpoint_struct.locked = 0;
+	player_respawn_point_size = level.struct_class_names[ "targetname" ][ "player_respawn_point" ].size;
+	player_initial_spawnpoint_size = level.struct_class_names[ "script_noteworthy" ][ "initial_spawn" ].size;
+	level.struct_class_names[ "targetname" ][ "player_respawn_point" ][ player_respawn_point_size ] = spawnpoint_struct;
+	level.struct_class_names[ "script_noteworthy" ][ "initial_spawn" ][ player_initial_spawnpoint_size ] = spawnpoint_struct;
 }
 
 zmeat_town_precache()
@@ -66,7 +109,10 @@ zmeat_town_main()
 	//wait(.5); //wait a small bit to make sure everyone is connected and running before kicking off 
 	setup_standard_objects_override( "town" );
 	level._meat_location = "town";	
-	level._meat_start_point = random(getstructarray("meat_2_spawn_points","targetname")).origin;//(4352, -13824, 224);
+	//level._meat_start_point = random(getstructarray("meat_2_spawn_points","targetname")).origin;//(4352, -13824, 224);
+	level._meat_start_points = [];
+	level._meat_start_points[ "A" ] = ( 1189.16, -514.579, -61.875 + 5 );
+	level._meat_start_points[ "B" ] = ( 1648.84, -319.649, -61.875 + 5 );
 	level._meat_team_1_zombie_spawn_points = getstructarray("meat_2_team_1_zombie_spawn_points","targetname");
 	level._meat_team_2_zombie_spawn_points = getstructarray("meat_2_team_2_zombie_spawn_points","targetname");
 	//level._meat_team_1_volume = getent("meat_2_team_1_volume","targetname");
@@ -76,7 +122,10 @@ zmeat_town_main()
 	level.zombie_vars["zombie_intermission_time"] = 5;
 	level._supress_survived_screen = 1;
 	level thread maps\mp\gametypes_zm\zmeat::item_meat_clear();
-	level thread meat_intro( "transit_town_meat_launch_spot" );
+	starting_team = ( cointoss() ? "A" : "B" );
+	level.meat_starting_team = starting_team;
+	level thread meat_intro( level._meat_start_points[ starting_team ] );
+	spawn_player_barriers();
 }
 
 town_meat_intermission()
@@ -134,4 +183,29 @@ setup_standard_objects_override( location )
 
     if ( isdefined( level._classic_setup_func ) )
         [[ level._classic_setup_func ]]();
+}
+
+spawn_player_barriers()
+{
+	collision_middle1 = spawn( "script_model", ( 1188.43, -64.4402, -55.875 ) );
+	collision_middle1 setModel( "collision_player_wall_512x512x10" );
+	collision_middle1.angles = ( 0, -138 + 90, 0 );
+	collision_middle2 = spawn( "script_model", ( 1396.48, -335.717, -67.875 ) );
+	collision_middle2 setModel( "collision_player_wall_512x512x10" );
+	collision_middle2.angles = ( 0, -139 + 90, 0 );
+	collision_middle3 = spawn( "script_model", ( 1493.65, -471.943, -67.875 ) );
+	collision_middle3 setModel( "collision_player_wall_512x512x10" );
+	collision_middle3.angles = ( 0, -149 + 90, 0 );
+	collision_middle4 = spawn( "script_model", ( 1751.49, -492.548, -58.1949 ) );
+	collision_middle4 setModel( "collision_player_wall_512x512x10" );
+	collision_middle4.angles = ( 0, 178 + 90, 0 );
+	collision_middle5 = spawn( "script_model", ( 1544.17, 451.856, -61.875 ) );
+	collision_middle5 setModel( "collision_player_wall_512x512x10" );
+	collision_middle5.angles = ( 0, -101 + 90, 0 );
+	collision_middle6 = spawn( "script_model", ( 1059.43, -546.414, -61.875 ) );
+	collision_middle6 setModel( "collision_player_wall_512x512x10" );
+	collision_middle6.angles = ( 0, -3 + 90, 0 );
+	collision_middle7 = spawn( "script_model", ( 1527.66, -1025.5, -46.03 ) );
+	collision_middle7 setModel( "collision_player_wall_512x512x10" );
+	collision_middle7.angles = ( 0, 81 + 90, 0 );
 }

@@ -11,11 +11,11 @@
 
 award_grenades_for_team( team )
 {
-	players = get_players();
+	players = getPlayers();
 
 	for ( i = 0; i < players.size; i++ )
 	{
-		if ( !isdefined( players[i]._meat_team ) || players[i]._meat_team != team )
+		if ( !isdefined( players[i]._encounters_team ) || players[i]._encounters_team != team )
 			continue;
 
 		lethal_grenade = players[i] get_player_lethal_grenade();
@@ -24,14 +24,14 @@ award_grenades_for_team( team )
 	}
 }
 
-get_players_on_meat_team( team )
+get_players_on_encounters_team( team )
 {
-	players = get_players();
+	players = getPlayers();
 	players_on_team = [];
 
 	for ( i = 0; i < players.size; i++ )
 	{
-		if ( !isdefined( players[i]._meat_team ) || players[i]._meat_team != team )
+		if ( !isdefined( players[i]._encounters_team ) || players[i]._encounters_team != team )
 			continue;
 
 		players_on_team[players_on_team.size] = players[i];
@@ -40,14 +40,14 @@ get_players_on_meat_team( team )
 	return players_on_team;
 }
 
-get_alive_players_on_meat_team( team )
+get_alive_players_on_encounters_team( team )
 {
-	players = get_players();
+	players = getPlayers();
 	players_on_team = [];
 
 	for ( i = 0; i < players.size; i++ )
 	{
-		if ( !isdefined( players[i]._meat_team ) || players[i]._meat_team != team )
+		if ( !isdefined( players[i]._encounters_team ) || players[i]._encounters_team != team )
 			continue;
 
 		if ( players[i].sessionstate == "spectator" || players[i] maps\mp\zombies\_zm_laststand::player_is_in_laststand() )
@@ -287,11 +287,10 @@ meat_splitter( trig )
 	level._fake_meats = [];
 	level._meat_splitter_activated = 1;
 	org = exit_trig.origin;
-	player = get_players()[0];
+	player = getPlayers()[0];
 	player._spawning_meat = 1;
 	player endon( "disconnect" );
 	thread split_meat( player, org, velocity1, velocity2, velocity );
-	level thread maps\mp\zombies\_zm_audio_announcer::leaderdialog( "meat_ring_splitter", undefined, undefined, 1 );
 	wait 0.1;
 
 	while ( isdefined( level.splitting_meat ) && level.splitting_meat )
@@ -346,7 +345,6 @@ minigun_prize( trig )
 
 	level._last_person_to_throw_meat thread maps\mp\zombies\_zm_powerups::powerup_vo( "minigun" );
 	level thread maps\mp\zombies\_zm_powerups::minigun_weapon_powerup( level._last_person_to_throw_meat );
-	level thread maps\mp\zombies\_zm_audio_announcer::leaderdialog( "meat_ring_minigun", undefined, undefined, 1 );
 }
 
 ammo_prize( trig )
@@ -364,7 +362,6 @@ ammo_prize( trig )
 	level thread ammo_toss_cooldown();
 	level._last_person_to_throw_meat thread maps\mp\zombies\_zm_powerups::powerup_vo( "full_ammo" );
 	level thread maps\mp\zombies\_zm_powerups::full_ammo_powerup( undefined, level._last_person_to_throw_meat );
-	level thread maps\mp\zombies\_zm_audio_announcer::leaderdialog( "meat_ring_ammo", undefined, undefined, 1 );
 }
 
 minigun_toss_cooldown()
@@ -399,92 +396,6 @@ ammo_toss_cooldown()
 	level._ammo_toss_cooldown = 0;
 }
 
-wait_for_team_death( team )
-{
-	level endon( "meat_end" );
-	encounters_team = undefined;
-
-	while ( true )
-	{
-		wait 1;
-
-		while ( isdefined( level._checking_for_save ) && level._checking_for_save )
-			wait 0.1;
-
-		alive_team_players = get_alive_players_on_meat_team( team );
-
-		if ( alive_team_players.size > 0 )
-		{
-			encounters_team = alive_team_players[0]._encounters_team;
-			continue;
-		}
-
-		break;
-	}
-
-	if ( !isdefined( encounters_team ) )
-		return;
-
-	winning_team = "A";
-
-	if ( encounters_team == "A" )
-		winning_team = "B";
-
-	level notify( "meat_end", winning_team );
-}
-
-check_should_save_player( team )
-{
-	if ( !isdefined( level._meat_on_team ) )
-		return false;
-
-	level._checking_for_save = 1;
-	players = get_players_on_meat_team( team );
-
-	for ( i = 0; i < players.size; i++ )
-	{
-		player = players[i];
-
-		if ( isdefined( level._last_person_to_throw_meat ) && level._last_person_to_throw_meat == player )
-		{
-			while ( isdefined( level.item_meat.meat_is_moving ) && level.item_meat.meat_is_moving || isdefined( level._meat_splitter_activated ) && level._meat_splitter_activated || isdefined( level.item_meat.meat_is_flying ) && level.item_meat.meat_is_flying )
-			{
-				if ( level._meat_on_team != player._meat_team )
-					break;
-
-				if ( isdefined( level.item_meat.meat_is_rolling ) && level.item_meat.meat_is_rolling && level._meat_on_team == player._meat_team )
-					break;
-
-				wait 0.05;
-			}
-
-			if ( !isdefined( player ) )
-			{
-				level._checking_for_save = 0;
-				return false;
-			}
-
-			if ( !( isdefined( player.last_damage_from_zombie_or_player ) && player.last_damage_from_zombie_or_player ) )
-			{
-				level._checking_for_save = 0;
-				return false;
-			}
-
-			if ( level._meat_on_team != player._meat_team && isdefined( level._last_person_to_throw_meat ) && level._last_person_to_throw_meat == player )
-			{
-				if ( player maps\mp\zombies\_zm_laststand::player_is_in_laststand() )
-				{
-					level thread revive_saved_player( player );
-					return true;
-				}
-			}
-		}
-	}
-
-	level._checking_for_save = 0;
-	return false;
-}
-
 watch_save_player()
 {
 	if ( !isdefined( level._meat_on_team ) )
@@ -497,16 +408,16 @@ watch_save_player()
 
 	while ( isdefined( level.splitting_meat ) && level.splitting_meat || isdefined( level.item_meat ) && ( isdefined( level.item_meat.meat_is_moving ) && level.item_meat.meat_is_moving || isdefined( level.item_meat.meat_is_flying ) && level.item_meat.meat_is_flying ) )
 	{
-		if ( level._meat_on_team != self._meat_team )
+		if ( level._meat_on_team != self._encounters_team )
 			break;
 
-		if ( isdefined( level.item_meat ) && ( isdefined( level.item_meat.meat_is_rolling ) && level.item_meat.meat_is_rolling ) && level._meat_on_team == self._meat_team )
+		if ( isdefined( level.item_meat ) && ( isdefined( level.item_meat.meat_is_rolling ) && level.item_meat.meat_is_rolling ) && level._meat_on_team == self._encounters_team )
 			break;
 
 		wait 0.05;
 	}
 
-	if ( level._meat_on_team != self._meat_team && isdefined( level._last_person_to_throw_meat ) && level._last_person_to_throw_meat == self )
+	if ( level._meat_on_team != self._encounters_team && isdefined( level._last_person_to_throw_meat ) && level._last_person_to_throw_meat == self )
 	{
 		if ( self maps\mp\zombies\_zm_laststand::player_is_in_laststand() )
 		{
@@ -535,13 +446,13 @@ revive_saved_player( player )
 
 get_game_module_players( player )
 {
-	return get_players_on_meat_team( player._meat_team );
+	return get_players_on_encounters_team( player._encounters_team );
 }
 
 item_meat_spawn( origin )
 {
 	org = origin;
-	player = get_players()[0];
+	player = getPlayers()[0];
 	player._spawning_meat = 1;
 	level.the_meat = player magicgrenadetype( get_gamemode_var( "item_meat_name" ), org, ( 0, 0, 0 ) );
 	playsoundatposition( "zmb_spawn_powerup", org );
@@ -566,105 +477,48 @@ meat_intro( launch_spot )
 	wait 3;
 	level thread multi_launch( launch_spot );
 	launch_meat( launch_spot );
-	drop_meat( level._meat_start_point );
-	level thread maps\mp\zombies\_zm_audio_announcer::leaderdialog( "meat_drop", undefined, undefined, 1 );
+	drop_meat( launch_spot );
 }
 
 launch_meat( launch_spot )
 {
 	level waittill( "launch_meat" );
-
-	spots = getstructarray( launch_spot, "targetname" );
-
-	if ( isdefined( spots ) && spots.size > 0 )
-	{
-		spot = random( spots );
-		meat = spawn( "script_model", spot.origin );
-		meat setmodel( "tag_origin" );
-		wait_network_frame();
-		playfxontag( level._effect["fw_trail"], meat, "tag_origin" );
-		meat playloopsound( "zmb_souls_loop", 0.75 );
-		dest = spot;
-
-		while ( isdefined( dest ) && isdefined( dest.target ) )
-		{
-			new_dest = getstruct( dest.target, "targetname" );
-			dest = new_dest;
-			dist = distance( new_dest.origin, meat.origin );
-			time = dist / 700;
-			meat moveto( new_dest.origin, time );
-
-			meat waittill( "movedone" );
-		}
-
-		meat playsound( "zmb_souls_end" );
-		playfx( level._effect["fw_burst"], meat.origin );
-		wait( randomfloatrange( 0.2, 0.5 ) );
-		meat playsound( "zmb_souls_end" );
-		playfx( level._effect["fw_burst"], meat.origin + ( randomintrange( 50, 150 ), randomintrange( 50, 150 ), randomintrange( -20, 20 ) ) );
-		wait( randomfloatrange( 0.5, 0.75 ) );
-		meat playsound( "zmb_souls_end" );
-		playfx( level._effect["fw_burst"], meat.origin + ( randomintrange( -150, -50 ), randomintrange( -150, 50 ), randomintrange( -20, 20 ) ) );
-		wait( randomfloatrange( 0.5, 0.75 ) );
-		meat playsound( "zmb_souls_end" );
-		playfx( level._effect["fw_burst"], meat.origin );
-		meat delete();
-	}
-}
-
-multi_launch( launch_spot )
-{
-	spots = getstructarray( launch_spot, "targetname" );
-
-	if ( isdefined( spots ) && spots.size > 0 )
-	{
-		for ( x = 0; x < 3; x++ )
-		{
-			for ( i = 0; i < spots.size; i++ )
-			{
-				delay = randomfloatrange( 0.1, 0.25 );
-				level thread fake_launch( spots[i], delay );
-			}
-
-			wait( randomfloatrange( 0.25, 0.75 ) );
-
-			if ( x > 1 )
-				level notify( "launch_meat" );
-		}
-	}
-	else
-	{
-		wait( randomfloatrange( 0.25, 0.75 ) );
-		level notify( "launch_meat" );
-	}
-}
-
-fake_launch( launch_spot, delay )
-{
-	wait( delay );
-	wait( randomfloatrange( 0.1, 4 ) );
-	meat = spawn( "script_model", launch_spot.origin + ( randomintrange( -60, 60 ), randomintrange( -60, 60 ), 0 ) );
+	meat = spawn( "script_model", launch_spot );
 	meat setmodel( "tag_origin" );
 	wait_network_frame();
-	playfxontag( level._effect["fw_trail_cheap"], meat, "tag_origin" );
+	playfxontag( level._effect["fw_trail"], meat, "tag_origin" );
 	meat playloopsound( "zmb_souls_loop", 0.75 );
 	dest = launch_spot;
 
 	while ( isdefined( dest ) && isdefined( dest.target ) )
 	{
-		random_offset = ( randomintrange( -60, 60 ), randomintrange( -60, 60 ), 0 );
 		new_dest = getstruct( dest.target, "targetname" );
 		dest = new_dest;
-		dist = distance( new_dest.origin + random_offset, meat.origin );
+		dist = distance( new_dest.origin, meat.origin );
 		time = dist / 700;
-		meat moveto( new_dest.origin + random_offset, time );
+		meat moveto( new_dest.origin, time );
 
 		meat waittill( "movedone" );
 	}
 
 	meat playsound( "zmb_souls_end" );
-	playfx( level._effect["fw_pre_burst"], meat.origin );
+	playfx( level._effect["fw_burst"], meat.origin );
+	wait( randomfloatrange( 0.2, 0.5 ) );
+	meat playsound( "zmb_souls_end" );
+	playfx( level._effect["fw_burst"], meat.origin + ( randomintrange( 50, 150 ), randomintrange( 50, 150 ), randomintrange( -20, 20 ) ) );
+	wait( randomfloatrange( 0.5, 0.75 ) );
+	meat playsound( "zmb_souls_end" );
+	playfx( level._effect["fw_burst"], meat.origin + ( randomintrange( -150, -50 ), randomintrange( -150, 50 ), randomintrange( -20, 20 ) ) );
+	wait( randomfloatrange( 0.5, 0.75 ) );
+	meat playsound( "zmb_souls_end" );
+	playfx( level._effect["fw_burst"], meat.origin );
 	meat delete();
+}
+
+multi_launch( launch_spot )
+{
+	wait( randomfloatrange( 0.25, 0.75 ) );
+	level notify( "launch_meat" );
 }
 
 drop_meat( drop_spot )

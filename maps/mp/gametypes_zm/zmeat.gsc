@@ -18,18 +18,9 @@
 
 main()
 {
-	replaceFunc( maps\mp\zombies\_zm::player_monitor_time_played, ::player_monitor_time_played_override );
-	replaceFunc( maps\mp\gametypes_zm\_zm_gametype::round_logic, ::round_logic_override );
-	replaceFunc( maps\mp\zombies\_zm_stats::initializeMatchStats, ::initializeMatchStats_override );
-	replaceFunc( maps\mp\zombies\_zm_utility::track_players_intersection_tracker, ::track_players_intersection_tracker_override );
-	replaceFunc( maps\mp\_utility::setclientfieldtoplayer, ::setclientfieldtoplayer_override );
-	replaceFunc( maps\mp\_visionset_mgr::update_clientfields, ::update_clientfields_override );
-	replaceFunc( maps\mp\zombies\_zm::watch_rampage_bookmark, ::watch_rampage_bookmark_override );
-	//replaceFunc( maps\mp\gametypes_zm\_globallogic::updategametypedvars, ::updategametypedvars_override );
 	level.zm_disable_recording_stats = true;
 	game[ "gamestarted" ] = undefined;
 	level.timelimitoverride = true;
-	print( "running zmeat.gsc" );
 	maps\mp\gametypes_zm\_zm_gametype::main();
 	registerclientfield( "allplayers", "holding_meat", 7000, 1, "int" );
 	registerclientfield( "scriptmover", "ring_glowfx", 7000, 1, "int" );
@@ -38,12 +29,10 @@ main()
 	level.onstartgametype = ::onstartgametype;
 	set_game_var( "ZM_roundLimit", 5 );
 	set_game_var( "ZM_scoreLimit", 5 );
-	set_gamemode_var( "post_init_zombie_spawn_func", ::meat_zombie_post_spawn_init );
 	set_gamemode_var( "match_end_notify", "meat_end" );
 	set_gamemode_var( "match_end_func", ::meat_end_match );
 	level._no_static_unitriggers = 1;
 	level._game_module_player_damage_callback = maps\mp\gametypes_zm\_zm_gametype::game_module_player_damage_callback;
-	level._game_module_player_laststand_callback = ::meat_last_stand_callback;
 	level.no_end_game_check = 1;
 	maps\mp\gametypes_zm\_zm_gametype::post_gametype_main( "zmeat" );
 	level thread maps\mp\gametypes_zm\_zm_gametype::init();
@@ -64,13 +53,11 @@ main()
 	level._effect["ring_glow"] = loadfx( "misc/fx_zombie_powerup_on" );
 	level.can_revive_game_module = ::can_revive;
 	onplayerconnect_callback( ::meat_on_player_connect );
-	spawn_level_meat_manager();
 	init_animtree();
 }
 
 onprecachegametype()
 {
-	print( "running zmeat.gsc onprecachegametype" );
 	level thread maps\mp\zombies\_zm_game_module_meat_utility::init_item_meat( "zmeat" );
 	maps\mp\gametypes_zm\_zm_gametype::rungametypeprecache( "zmeat" );
 	game_mode_objects = getstructarray( "game_mode_object", "targetname" );
@@ -90,14 +77,14 @@ onprecachegametype()
 	precachemodel( "p6_zm_sign_meat_01_step2" );
 	precachemodel( "p6_zm_sign_meat_01_step3" );
 	precachemodel( "p6_zm_sign_meat_01_step4" );
+	precachemodel( "collision_player_wall_512x512x10" );
 	level thread spawn_side_trigger();
 }
 
 meat_hub_start_func()
 {
-	print( "running meat_hub_start_func" );
 	level thread meat_player_initial_spawn();
-	level thread item_meat_reset( level._meat_start_point );
+	level thread item_meat_reset( level._meat_start_points[ level.meat_starting_team ] );
 	level thread spawn_meat_zombies();
 	level thread monitor_meat_on_team();
 	level thread init_minigun_ring();
@@ -127,16 +114,13 @@ meat_hub_start_func()
 	setmatchtalkflag( "DeadHearTeamLiving", 1 );
 	setmatchtalkflag( "DeadHearAllLiving", 1 );
 	setmatchtalkflag( "EveryoneHearsEveryone", 1 );
-	setteamhasmeat( "allies", 0 );
-	setteamhasmeat( "axis", 0 );
-	level thread zmbmusicsetupmeat();
 	level.zombie_spawn_fx = level._effect["spawn_cloud"];
 	level thread monitor_meat_on_side();
 	level thread item_meat_watch_for_throw();
 	level thread hold_meat_monitor();
 	flag_wait( "start_encounters_match_logic" );
-	level thread wait_for_team_death( 1 );
-	level thread wait_for_team_death( 2 );
+	level thread wait_for_team_death( "A" );
+	level thread wait_for_team_death( "B" );
 	level.team_a_downed = 0;
 	level.team_b_downed = 0;
 }
@@ -148,69 +132,8 @@ meat_on_player_connect()
 	self thread wait_for_player_disconnect();
 	self thread wait_for_player_downed();
 	level.player_out_of_playable_area_monitor = false;
-/#
-	self thread watch_debug_input();
-#/
-	teamplayersallies = countplayers("allies") - 1; // always sets self to "allies" initially
-	teamplayersaxis = countplayers("axis");
-
-	if(teamplayersallies == teamplayersaxis)
-	{
-		if(cointoss())
-		{
-			self.team = "axis";
-			self.sessionteam = "axis";
-			self.pers["team"] = "axis";
-			self._encounters_team = "A";
-		}
-		else
-		{
-			self.team = "allies";
-			self.sessionteam = "allies";
-			self.pers["team"] = "allies";
-			self._encounters_team = "B";
-		}
-	}
-	else
-	{
-		if(teamplayersallies > teamplayersaxis)
-		{
-			self.team = "axis";
-			self.sessionteam = "axis";
-			self.pers["team"] = "axis";
-			self._encounters_team = "A";
-		}
-		else
-		{
-			self.team = "allies";
-			self.sessionteam = "allies";
-			self.pers["team"] = "allies";
-			self._encounters_team = "B";
-		}
-	}
 	if ( hotjoined )
 	{
-		one = 1;
-		two = 2;
-
-		if ( get_game_var( "switchedsides" ) )
-		{
-			one = 2;
-			two = 1;
-		}
-
-		if ( get_game_var( "side_selection" ) == 1 )
-		{
-			if ( self.team == "allies" )
-				self._meat_team = one;
-			else
-				self._meat_team = two;
-		}
-		else if ( self.team == "allies" )
-			self._meat_team = two;
-		else
-			self._meat_team = one;
-
 		self meat_player_setup();
 	}
 	if ( !isDefined( level.zmeat_test_bots ) )
@@ -226,20 +149,18 @@ meat_on_player_connect()
 
 meat_on_player_disconnect()
 {
-	team0 = 1;
-	team1 = 2;
 	team_counts = [];
-	team_counts[team0] = 0;
-	team_counts[team1] = 0;
-	players = get_players();
+	team_counts["A"] = 0;
+	team_counts["B"] = 0;
+	players = getPlayers();
 
 	for ( i = 0; i < players.size; i++ )
-		team_counts[players[i]._meat_team] += 1;
+		team_counts[players[i]._encounters_team] += 1;
 
-	if ( team_counts[team0] == 0 )
+	if ( team_counts["A"] == 0 )
 		maps\mp\gametypes_zm\_zm_gametype::end_rounds_early( "B" );
 
-	if ( team_counts[team1] == 0 )
+	if ( team_counts["B"] == 0 )
 		maps\mp\gametypes_zm\_zm_gametype::end_rounds_early( "A" );
 }
 
@@ -252,43 +173,12 @@ wait_for_player_disconnect()
 	meat_on_player_disconnect();
 }
 
-watch_debug_input()
-{
-/#
-	self endon( "disconnect" );
-
-	for (;;)
-	{
-		if ( self actionslottwobuttonpressed() )
-		{
-			if ( getdvar( _hash_B188A91 ) != "" )
-			{
-				self disableinvulnerability();
-				self dodamage( self.health + 666, self.origin );
-			}
-		}
-
-		wait 0.05;
-	}
-#/
-}
-
-zmbmusicsetupmeat()
-{
-	level.zmb_music_states["game_over"] = undefined;
-	level thread maps\mp\zombies\_zm_audio::setupmusicstate( "waiting", "ENC_WAITING", 0, 0, 0, undefined );
-	level thread maps\mp\zombies\_zm_audio::setupmusicstate( "round_start", "ENC_ROUND_START", 0, 0, 0, undefined );
-	level thread maps\mp\zombies\_zm_audio::setupmusicstate( "round_end", "ENC_ROUND_END", 0, 0, 0, undefined );
-	level thread maps\mp\zombies\_zm_audio::setupmusicstate( "halftime", "ENC_HALFTIME", 0, 0, 0, undefined );
-	level thread maps\mp\zombies\_zm_audio::setupmusicstate( "match_over", "ENC_MATCH_OVER", 0, 0, 0, undefined );
-}
-
 monitor_meat_on_side()
 {
 	level endon( "meat_end" );
 
-	level waittill( "meat_grabbed" );
-
+	//level waittill( "meat_grabbed" );
+	wait 15;
 	last_team = level._meat_on_team;
 	level.meat_lost_time_limit = 5000;
 
@@ -296,32 +186,19 @@ monitor_meat_on_side()
 	{
 		if ( isdefined( level.item_meat ) )
 		{
-			// if ( !isdefined( level._meat_team_1_volume ) || !isdefined( level._meat_team_2_volume ) )
-			// 	iprintlnbold( "BUG: There is something wrong with the team volumes" );
-
-			// if ( isdefined( level._meat_team_1_volume ) && level.item_meat istouching( level._meat_team_1_volume ) )
-			// {
-			// 	level._meat_on_team = 1;
-			// 	level.meat_lost_time = undefined;
-			// }
-			// else if ( isdefined( level._meat_team_2_volume ) && level.item_meat istouching( level._meat_team_2_volume ) )
-			// {
-			// 	level._meat_on_team = 2;
-			// 	level.meat_lost_time = undefined;
-			// }
 			if ( is_true( level.meat_touched_middle_volume ) )
 			{
 				level.meat_touched_middle_volume = false;
 				if ( isDefined( level._meat_on_team ) )
 				{
 					iPrintLnBold( "Meat switched sides new team = " + level._meat_on_team );
-					if ( level._meat_on_team == 1 )
+					if ( level._meat_on_team == "A" )
 					{
-						level._meat_on_team = 2;
+						level._meat_on_team = "B";
 					}
 					else 
 					{
-						level._meat_on_team = 1;
+						level._meat_on_team = "A";
 					}
 					level.meat_lost_time = undefined;
 				}
@@ -333,10 +210,11 @@ monitor_meat_on_side()
 				else if ( gettime() - level.meat_lost_time > level.meat_lost_time_limit )
 				{
 					add_meat_event( "level_lost_meat" );
-					level thread item_meat_reset( level._meat_start_point, 1 );
+					new_team = ( cointoss() ? "A" : "B" );
+					level thread item_meat_reset( level._meat_start_points[ new_team ], 1 );
 					level.meat_lost_time = undefined;
 
-					level waittill( "meat_grabbed" );
+					assign_meat_to_team( undefined, new_team );
 				}
 			}
 		}
@@ -351,10 +229,10 @@ monitor_meat_on_side()
 				else if ( gettime() - level.meat_lost_time > level.meat_lost_time_limit )
 				{
 					add_meat_event( "level_lost_meat" );
-					level thread item_meat_reset( level._meat_start_point, 1 );
+					new_team = ( cointoss() ? "A" : "B" );
+					level thread item_meat_reset( level._meat_start_points[ new_team ], 1 );
 					level.meat_lost_time = undefined;
-
-					level waittill( "meat_grabbed" );
+					assign_meat_to_team( undefined, new_team );
 				}
 			}
 			else
@@ -367,10 +245,6 @@ monitor_meat_on_side()
 			add_meat_event( "level_meat_team", level._meat_on_team );
 			last_team = level._meat_on_team;
 			assign_meat_to_team( undefined, level._meat_on_team );
-/#
-			if ( isdefined( level.item_meat ) )
-				playfx( level._effect["spawn_cloud"], level.item_meat.origin );
-#/
 		}
 
 		wait 0.05;
@@ -389,12 +263,6 @@ item_meat_watch_for_throw()
 
 		if ( isdefined( who._spawning_meat ) && who._spawning_meat )
 			continue;
-
-		if ( randomintrange( 1, 101 ) <= 10 )
-		{
-
-		}
-
 		who._has_meat = 0;
 
 		if ( isdefined( who._has_meat_hud ) )
@@ -420,7 +288,7 @@ hold_meat_monitor()
 			continue;
 		}
 
-		if ( !should_try_to_bring_back_teammate( player._meat_team ) )
+		if ( !should_try_to_bring_back_teammate( player._encounters_team ) )
 		{
 			wait 0.2;
 			continue;
@@ -433,18 +301,6 @@ hold_meat_monitor()
 	}
 }
 
-meat_zombie_post_spawn_init()
-{
-
-}
-
-item_meat_spawned( unused0, unused1 )
-{
-	maps\mp\gametypes_zm\_weaponobjects::voidonspawn( unused0, unused1 );
-	self.meat_is_moving = 0;
-	self.meat_is_flying = 0;
-}
-
 wait_for_player_downed()
 {
 	self endon( "disconnect" );
@@ -455,15 +311,10 @@ wait_for_player_downed()
 		add_meat_event( "player_down", self );
 		wait 0.1;
 
-		if ( isdefined( self._meat_team ) )
+		if ( isdefined( self._encounters_team ) )
 		{
 			self thread watch_save_player();
-			players = get_players_on_meat_team( self._meat_team );
-
-			if ( players.size >= 2 )
-			{
-
-			}
+			players = get_players_on_encounters_team( self._encounters_team );
 		}
 	}
 }
@@ -489,22 +340,7 @@ item_meat_watch_stationary()
 		level._meat_splitter_activated = 0;
 		level._last_person_to_throw_meat = undefined;
 	}
-
 	self.meat_is_moving = 0;
-
-	if ( isdefined( level._meat_on_team ) )
-	{
-		teamplayers = get_players_on_meat_team( level._meat_on_team );
-
-		for ( i = 0; i < teamplayers.size; i++ )
-		{
-			if ( isdefined( teamplayers[i] ) && isdefined( teamplayers[i]._encounters_team ) )
-			{
-				level thread maps\mp\zombies\_zm_audio_announcer::leaderdialog( "meat_land", teamplayers[i]._encounters_team );
-				break;
-			}
-		}
-	}
 }
 
 item_meat_watch_bounce()
@@ -526,16 +362,9 @@ item_meat_watch_bounce()
 		return;
 	}
 
-	if ( isdefined( level.spawned_collmap ) )
-	{
-		if ( isdefined( ent ) && ent == level.spawned_collmap )
-			playfx( level._effect["meat_bounce"], pos, normal );
-	}
-
 	if ( isdefined( ent ) && isplayer( ent ) )
 	{
 		add_meat_event( "player_hit_player", self.owner, ent );
-		self.owner hit_player_with_meat( ent );
 	}
 
 	self.meat_is_flying = 0;
@@ -563,19 +392,6 @@ watch_for_roll()
 	}
 }
 
-stop_rolling()
-{
-	self.origin = self.origin;
-	self.angles = self.angles;
-}
-
-hit_player_with_meat( hit_player )
-{
-/#
-	println( "MEAT: Player " + self.name + " hit " + hit_player.name + " with the meat\\n" );
-#/
-}
-
 item_meat_pickup()
 {
 	self.meat_is_moving = 0;
@@ -599,9 +415,6 @@ player_wait_take_meat( meat_name )
 			self switchtoweapon( primaryweapons[0] );
 		else
 		{
-/#
-			assert( 0, "Player has no weapon" );
-#/
 			self maps\mp\zombies\_zm_weapons::give_fallback_weapon();
 		}
 	}
@@ -738,31 +551,9 @@ item_meat_on_spawn_retrieve_trigger( watcher, player, weaponname )
 	{
 		self thread item_meat_watch_trigger( self.meat_id, self.item_meat_pick_up_trigger, ::item_meat_on_pickup, level.meat_pickupsoundplayer, level.meat_pickupsound );
 		self thread kick_meat_monitor();
-		self thread last_stand_meat_nudge();
 	}
 
 	self._respawned_meat = undefined;
-}
-
-last_stand_meat_nudge()
-{
-	level endon( "meat_grabbed" );
-	level endon( "end_meat" );
-	self endon( "death" );
-	wait 0.15;
-
-	while ( true )
-	{
-		players = get_players();
-
-		foreach ( player in players )
-		{
-			if ( distancesquared( player.origin, self.origin ) < 2304 && player maps\mp\zombies\_zm_laststand::player_is_in_laststand() )
-				player thread kick_the_meat( self, 1 );
-		}
-
-		wait 0.05;
-	}
 }
 
 kick_meat_monitor()
@@ -774,7 +565,7 @@ kick_meat_monitor()
 
 	while ( true )
 	{
-		players = get_players();
+		players = getPlayers();
 		curr_time = gettime();
 
 		foreach ( player in players )
@@ -784,7 +575,7 @@ kick_meat_monitor()
 
 			if ( distancesquared( player.origin, self.origin ) < 2304 && player issprinting() && !player usebuttonpressed() )
 			{
-				if ( isdefined( player._meat_team ) && isdefined( level._meat_on_team ) && level._meat_on_team == player._meat_team )
+				if ( isdefined( player._encounters_team ) && isdefined( level._meat_on_team ) && level._meat_on_team == player._encounters_team )
 				{
 					add_meat_event( "player_kick_meat", player, self );
 					player thread kick_the_meat( self );
@@ -856,121 +647,6 @@ spike_the_meat( meat )
 	}
 }
 
-show_meat_throw_hint()
-{
-	level endon( "meat_thrown" );
-	self endon( "player_downed" );
-	self thread meat_screen_message_delete_on_death();
-	wait 1;
-	self meat_create_hint_message( &"ZOMBIE_THROW_MEAT_HINT" );
-	self thread meat_screen_message_delete();
-}
-
-meat_create_hint_message( string_message_1, string_message_2, string_message_3, n_offset_y )
-{
-	if ( !isdefined( n_offset_y ) )
-		n_offset_y = 0;
-
-	if ( !isdefined( self._screen_message_1 ) )
-	{
-		self._screen_message_1 = newclienthudelem( self );
-		self._screen_message_1.elemtype = "font";
-		self._screen_message_1.font = "objective";
-		self._screen_message_1.fontscale = 1.8;
-		self._screen_message_1.horzalign = "center";
-		self._screen_message_1.vertalign = "middle";
-		self._screen_message_1.alignx = "center";
-		self._screen_message_1.aligny = "middle";
-		self._screen_message_1.y = -60 + n_offset_y;
-		self._screen_message_1.sort = 2;
-		self._screen_message_1.color = ( 1, 1, 1 );
-		self._screen_message_1.alpha = 0.7;
-		self._screen_message_1.hidewheninmenu = 1;
-	}
-
-	self._screen_message_1 settext( string_message_1 );
-
-	if ( isdefined( string_message_2 ) )
-	{
-		if ( !isdefined( self._screen_message_2 ) )
-		{
-			self._screen_message_2 = newclienthudelem( self );
-			self._screen_message_2.elemtype = "font";
-			self._screen_message_2.font = "objective";
-			self._screen_message_2.fontscale = 1.8;
-			self._screen_message_2.horzalign = "center";
-			self._screen_message_2.vertalign = "middle";
-			self._screen_message_2.alignx = "center";
-			self._screen_message_2.aligny = "middle";
-			self._screen_message_2.y = -33 + n_offset_y;
-			self._screen_message_2.sort = 2;
-			self._screen_message_2.color = ( 1, 1, 1 );
-			self._screen_message_2.alpha = 0.7;
-			self._screen_message_2.hidewheninmenu = 1;
-		}
-
-		level._screen_message_2 settext( string_message_2 );
-	}
-	else if ( isdefined( self._screen_message_2 ) )
-		self._screen_message_2 destroy();
-
-	if ( isdefined( string_message_3 ) )
-	{
-		if ( !isdefined( self._screen_message_3 ) )
-		{
-			self._screen_message_3 = newclienthudelem( self );
-			self._screen_message_3.elemtype = "font";
-			self._screen_message_3.font = "objective";
-			self._screen_message_3.fontscale = 1.8;
-			self._screen_message_3.horzalign = "center";
-			self._screen_message_3.vertalign = "middle";
-			self._screen_message_3.alignx = "center";
-			self._screen_message_3.aligny = "middle";
-			self._screen_message_3.y = -6 + n_offset_y;
-			self._screen_message_3.sort = 2;
-			self._screen_message_3.color = ( 1, 1, 1 );
-			self._screen_message_3.alpha = 0.7;
-			self._screen_message_3.hidewheninmenu = 1;
-		}
-
-		self._screen_message_3 settext( string_message_3 );
-	}
-	else if ( isdefined( self._screen_message_3 ) )
-		self._screen_message_3 destroy();
-}
-
-meat_screen_message_delete()
-{
-	self endon( "disconnect" );
-	level waittill_notify_or_timeout( "meat_thrown", 5 );
-
-	if ( isdefined( self._screen_message_1 ) )
-		self._screen_message_1 destroy();
-
-	if ( isdefined( self._screen_message_2 ) )
-		self._screen_message_2 destroy();
-
-	if ( isdefined( self._screen_message_3 ) )
-		self._screen_message_3 destroy();
-}
-
-meat_screen_message_delete_on_death()
-{
-	level endon( "meat_thrown" );
-	self endon( "disconnect" );
-
-	self waittill( "player_downed" );
-
-	if ( isdefined( self._screen_message_1 ) )
-		self._screen_message_1 destroy();
-
-	if ( isdefined( self._screen_message_2 ) )
-		self._screen_message_2 destroy();
-
-	if ( isdefined( self._screen_message_3 ) )
-		self._screen_message_3 destroy();
-}
-
 set_ignore_all()
 {
 	level endon( "clear_ignore_all" );
@@ -1032,7 +708,7 @@ bring_back_teammate_progress()
 
 		if ( progress > revivetime * 10 )
 		{
-			level bring_back_dead_teammate( player._meat_team );
+			level bring_back_dead_teammate( player._encounters_team );
 			player destroy_revive_progress();
 			wait 1;
 			player._bringing_back_teammate = 0;
@@ -1048,11 +724,11 @@ bring_back_teammate_progress()
 
 should_try_to_bring_back_teammate( team )
 {
-	players = get_players();
+	players = getPlayers();
 
 	for ( i = 0; i < players.size; i++ )
 	{
-		if ( players[i]._meat_team == team && players[i].sessionstate == "spectator" )
+		if ( players[i]._encounters_team == team && players[i].sessionstate == "spectator" )
 			return true;
 	}
 
@@ -1061,11 +737,11 @@ should_try_to_bring_back_teammate( team )
 
 bring_back_dead_teammate( team )
 {
-	players = get_players();
+	players = getPlayers();
 
 	for ( i = 0; i < players.size; i++ )
 	{
-		if ( players[i]._meat_team == team && players[i].sessionstate == "spectator" )
+		if ( players[i]._encounters_team == team && players[i].sessionstate == "spectator" )
 		{
 			player = players[i];
 			break;
@@ -1090,7 +766,6 @@ respawn_meat_player()
 {
 	spawnpoint = self maps\mp\gametypes_zm\_globallogic_score::getpersstat( "meat_spectator_respawn" );
 	self spawn( spawnpoint.origin, spawnpoint.angles );
-	self._meat_team = self.pers["zteam"];
 	self._encounters_team = self.pers["encounters_team"];
 	self.characterindex = self.pers["characterindex"];
 	self._team_name = self.pers["team_name"];
@@ -1260,8 +935,6 @@ start_encounters_round_logic()
 
 onstartgametype()
 {
-	print( "running zmeat.gsc onstartgametype" );
-	setmatchflag( "disableIngameMenu", 0 );
 	thread start_encounters_round_logic();
 	maps\mp\gametypes_zm\_zm_gametype::rungametypemain( "zmeat", ::meat_hub_start_func, 1 );
 }
@@ -1296,16 +969,16 @@ hide_non_meat_objects()
 
 is_meat_object()
 {
-	if ( !isdefined( self.script_parameters ) )
-		return true;
+	// if ( !isdefined( self.script_parameters ) )
+	// 	return true;
 
-	tokens = strtok( self.script_parameters, " " );
+	// tokens = strtok( self.script_parameters, " " );
 
-	for ( i = 0; i < tokens.size; i++ )
-	{
-		if ( tokens[i] == "meat_remove" )
-			return false;
-	}
+	// for ( i = 0; i < tokens.size; i++ )
+	// {
+	// 	if ( tokens[i] == "meat_remove" )
+	// 		return false;
+	// }
 
 	return true;
 }
@@ -1343,15 +1016,8 @@ spawn_meat_zombies()
 	force_chaser = 0;
 	num = 0;
 	max_ai_num = 15;
-
-	if ( getdvarint( _hash_CD22CF55 ) > 0 )
-		max_ai_num = 0;
-
-	if ( getdvarint( _hash_FA81816F ) == 2 )
-		max_ai_num = -1;
-
-	level waittill( "meat_grabbed" );
-
+	//level waittill( "meat_grabbed" );
+	level waittill( "meat_assigned_to_team" );
 	while ( true )
 	{
 		ai = getaiarray( level.zombie_team );
@@ -1379,9 +1045,9 @@ spawn_meat_zombies()
 					point = spawn_points[index];
 
 					if ( num % 2 == 0 )
-						players = get_players_on_meat_team( 1 );
+						players = get_players_on_encounters_team( "A" );
 					else
-						players = get_players_on_meat_team( 2 );
+						players = get_players_on_encounters_team( "B" );
 
 					clear = 1;
 
@@ -1425,7 +1091,6 @@ spawn_meat_zombie( spawner, target_name, spawn_point, round_number )
 
 	if ( !isdefined( spawner ) )
 	{
-		iprintlnbold( "BUG: There is something wrong with the zombie spawners" );
 		return;
 	}
 
@@ -1442,9 +1107,6 @@ spawn_meat_zombie( spawner, target_name, spawn_point, round_number )
 		zombie thread maps\mp\zombies\_zm_spawner::zombie_spawn_init();
 		zombie thread maps\mp\zombies\_zm::round_spawn_failsafe();
 	}
-	else
-		iprintlnbold( "BUG: There is something wrong with the zombie spawning" );
-
 	spawner._spawning = undefined;
 	level._meat_zombie_spawning = 0;
 	return zombie;
@@ -1456,7 +1118,7 @@ monitor_meat_on_team()
 
 	while ( true )
 	{
-		players = get_players();
+		players = getPlayers();
 
 		if ( isdefined( level._meat_on_team ) )
 		{
@@ -1465,7 +1127,7 @@ monitor_meat_on_team()
 				if ( !isdefined( players[i] ) )
 					continue;
 
-				if ( players[i]._meat_team == level._meat_on_team )
+				if ( players[i]._encounters_team == level._meat_on_team )
 				{
 					if ( players[i].ignoreme )
 						players[i].ignoreme = 0;
@@ -1516,63 +1178,22 @@ item_meat_reset( origin, immediate )
 
 meat_player_initial_spawn()
 {
-	players = get_players();
-	one = 1;
-	two = 2;
-
-	if ( get_game_var( "switchedsides" ) )
-	{
-		one = 2;
-		two = 1;
-	}
-
+	players = getPlayers();
 	for ( i = 0; i < players.size; i++ )
 	{
-		if ( get_game_var( "side_selection" ) == 1 )
-		{
-			if ( players[i].team == "allies" )
-				players[i]._meat_team = one;
-			else
-				players[i]._meat_team = two;
-		}
-		else if ( players[i].team == "allies" )
-			players[i]._meat_team = two;
-		else
-			players[i]._meat_team = one;
-
 		if ( isdefined( level.custom_player_fake_death_cleanup ) )
 			players[i] [[ level.custom_player_fake_death_cleanup ]]();
-
-		players[i] setstance( "stand" );
-
-		if ( isdefined( players[i]._meat_team ) )
-		{
-			if ( players[i]._meat_team == one )
-				players[i]._meat_team = one;
-			else
-				players[i]._meat_team = two;
-		}
-		else if ( players[i].team == "axis" )
-			players[i]._meat_team = one;
-		else
-			players[i]._meat_team = two;
-
 		players[i] meat_player_setup();
 	}
 
 	waittillframeend;
 	start_round();
-	award_grenades_for_team( 1 );
-	award_grenades_for_team( 2 );
+	award_grenades_for_team( "A" );
+	award_grenades_for_team( "B" );
 }
 
 meat_player_setup()
 {
-	self.pers["zteam"] = self._meat_team;
-	self maps\mp\gametypes_zm\_globallogic_score::initpersstat( "encounters_team", 0 );
-	self maps\mp\gametypes_zm\_globallogic_score::initpersstat( "characterindex", 0 );
-	self maps\mp\gametypes_zm\_globallogic_score::initpersstat( "team_name", 0 );
-	self maps\mp\gametypes_zm\_globallogic_score::initpersstat( "spectator_respawn", 0 );
 	self.pers["encounters_team"] = self._encounters_team;
 	self.pers["characterindex"] = self.characterindex;
 	self.pers["team_name"] = self._team_name;
@@ -1631,7 +1252,7 @@ item_quick_trigger( meat_id, trigger )
 		radius = 51.0;
 
 	trigrad2 = radius * radius;
-	players = get_players();
+	players = getPlayers();
 
 	for ( i = 0; i < players.size; i++ )
 	{
@@ -1642,7 +1263,7 @@ item_quick_trigger( meat_id, trigger )
 	while ( isdefined( trigger ) )
 	{
 		trigorg = trigger.origin;
-		players = get_players();
+		players = getPlayers();
 
 		if ( players.size )
 		{
@@ -1767,44 +1388,20 @@ item_meat_watch_trigger( meat_id, trigger, callback, playersoundonuse, npcsoundo
 		else
 		{
 			self thread [[ callback ]]( player );
-
-			if ( !isdefined( player._meat_hint_shown ) )
-			{
-				player thread show_meat_throw_hint();
-				player._meat_hint_shown = 1;
-			}
 		}
 	}
 }
 
 item_meat_volley( player )
 {
-/#
-	println( "MEAT: Spiked the meat\\n" );
-#/
 }
 
 item_meat_caught( player, in_air )
 {
-	if ( in_air )
-	{
-/#
-		println( "MEAT: Caught the meat on the fly\\n" );
-#/
-	}
-	else
-	{
-/#
-		println( "MEAT: Caught the meat while moving\\n" );
-#/
-	}
 }
 
 item_meat_on_pickup( player )
 {
-/#
-	assert( !player maps\mp\zombies\_zm_laststand::player_is_in_laststand(), "Player in last stand triggered meat pickup" );
-#/
 	player maps\mp\gametypes_zm\_weaponobjects::deleteweaponobjecthelper( self );
 	self cleanup_meat();
 	level.item_meat = undefined;
@@ -1812,8 +1409,6 @@ item_meat_on_pickup( player )
 	assign_meat_to_team( player );
 	level notify( "meat_grabbed" );
 	player notify( "meat_grabbed" );
-	level thread zmbvoxmeatonteamspecific( player._encounters_team );
-
 	if ( !player hasweapon( get_gamemode_var( "item_meat_name" ) ) )
 		player giveweapon( get_gamemode_var( "item_meat_name" ) );
 
@@ -1913,7 +1508,7 @@ meat_poi_override_func()
 
 meat_end_match( winning_team )
 {
-	players = get_players();
+	players = getPlayers();
 
 	for ( i = 0; i < players.size; i++ )
 	{
@@ -1958,13 +1553,11 @@ updatedownedcounters()
 	{
 		level.team_a_downed++;
 		self thread waitforrevive( "A" );
-		level thread maps\mp\zombies\_zm_audio_announcer::leaderdialog( "meat_revive_" + level.team_a_downed, "A" );
 	}
 	else
 	{
 		level.team_b_downed++;
 		self thread waitforrevive( "B" );
-		level thread maps\mp\zombies\_zm_audio_announcer::leaderdialog( "meat_revive_" + level.team_b_downed, "B" );
 	}
 }
 
@@ -1980,57 +1573,22 @@ waitforrevive( team )
 		level.team_b_downed--;
 }
 
-assign_meat_to_team( player, team_num )
+assign_meat_to_team( player, encounters_team )
 {
 	meat_team = undefined;
-	players = get_players();
+	players = getPlayers();
 
 	if ( isdefined( player ) )
 	{
-		for ( i = 0; i < players.size; i++ )
-		{
-			if ( !isdefined( players[i] ) )
-				continue;
-
-			if ( players[i] != player || isdefined( player._meat_hint_shown ) && player._meat_hint_shown )
-				players[i] iprintlnbold( &"ZOMBIE_GRABBED_MEAT", player.name );
-		}
-
-		meat_team = player._meat_team;
+		meat_team = player._encounters_team;
 	}
-	else if ( isdefined( team_num ) )
+	else if ( isdefined( encounters_team ) )
 	{
-		for ( i = 0; i < players.size; i++ )
-		{
-			if ( players[i]._meat_team == team_num )
-			{
-				players[i] iprintlnbold( &"ZOMBIE_YOUR_TEAM_MEAT" );
-				continue;
-			}
-
-			players[i] iprintlnbold( &"ZOMBIE_OTHER_TEAM_MEAT" );
-		}
-
-		meat_team = team_num;
+		meat_team = encounters_team;
 	}
 
 	level._meat_on_team = meat_team;
-	teamplayers = get_players_on_meat_team( meat_team );
-
-	if ( isdefined( teamplayers ) && teamplayers.size > 0 )
-	{
-		if ( teamplayers[0]._encounters_team == "B" )
-		{
-			setteamhasmeat( "allies", 1 );
-			setteamhasmeat( "axis", 0 );
-		}
-		else if ( teamplayers[0]._encounters_team == "A" )
-		{
-			setteamhasmeat( "allies", 0 );
-			setteamhasmeat( "axis", 1 );
-		}
-	}
-
+	teamplayers = get_players_on_encounters_team( meat_team );
 	for ( i = 0; i < players.size; i++ )
 	{
 		if ( !isdefined( players[i] ) )
@@ -2045,80 +1603,9 @@ assign_meat_to_team( player, team_num )
 			players[i] thread slow_down_player_with_meat();
 			players[i] thread reset_meat_when_player_downed();
 			players[i] thread reset_meat_when_player_disconnected();
-			continue;
 		}
 	}
-}
-
-zmbvoxmeatonteamspecific( team )
-{
-	if ( !isdefined( level.zmbvoxteamlasthadmeat ) )
-		level.zmbvoxteamlasthadmeat = team;
-
-	if ( level.zmbvoxteamlasthadmeat == team )
-		return;
-
-	level thread maps\mp\zombies\_zm_audio_announcer::leaderdialog( "meat_grab", team );
-	level.zmbvoxteamlasthadmeat = team;
-	otherteam = maps\mp\zombies\_zm_audio_announcer::getotherteam( team );
-	level thread maps\mp\zombies\_zm_audio_announcer::leaderdialog( "meat_grab_" + otherteam, otherteam );
-}
-
-create_meat_team_hud( meat_team, destroy_only )
-{
-	if ( isdefined( self._has_meat_hud ) )
-	{
-		self._has_meat_hud destroy();
-
-		if ( isdefined( destroy_only ) )
-			return;
-	}
-
-	if ( !isdefined( meat_team ) )
-		return;
-
-	elem = newclienthudelem( self );
-	elem.hidewheninmenu = 1;
-	elem.horzalign = "LEFT";
-	elem.vertalign = "BOTTOM";
-	elem.alignx = "left";
-	elem.aligny = "middle";
-	elem.x = 10;
-	elem.y = -10;
-	elem.foreground = 1;
-	elem.font = "default";
-	elem.fontscale = 1.4;
-	elem.color = vectorscale( ( 1, 1, 0 ), 0.9 );
-	elem.alpha = 1.0;
-
-	if ( isdefined( self._meat_team ) && self._meat_team == meat_team )
-		elem.label = &"ZOMBIE_TEAM_HAS_MEAT";
-	else
-		elem.label = &"ZOMBIE_OTHER_TEAM_HAS_MEAT";
-
-	self._has_meat_hud = elem;
-}
-
-create_meat_player_hud()
-{
-	if ( isdefined( self._has_meat_hud ) )
-		self._has_meat_hud destroy();
-
-	elem = newclienthudelem( self );
-	elem.hidewheninmenu = 1;
-	elem.horzalign = "LEFT";
-	elem.vertalign = "BOTTOM";
-	elem.alignx = "left";
-	elem.aligny = "middle";
-	elem.x = 10;
-	elem.y = -10;
-	elem.foreground = 1;
-	elem.font = "default";
-	elem.fontscale = 1.4;
-	elem.color = vectorscale( ( 1, 1, 0 ), 0.9 );
-	elem.alpha = 1.0;
-	elem.label = &"ZOMBIE_PLAYER_HAS_MEAT";
-	self._has_meat_hud = elem;
+	level notify( "meat_assigned_to_team" );
 }
 
 slow_down_player_with_meat()
@@ -2126,8 +1613,6 @@ slow_down_player_with_meat()
 	self endon( "disconnect" );
 	self setclientfield( "holding_meat", 1 );
 	self setmovespeedscale( 0.6 );
-	self thread zmbvoxstartholdcounter();
-
 	while ( isdefined( self._has_meat ) && self._has_meat )
 	{
 		level._meat_player_tracker_origin = self.origin;
@@ -2136,20 +1621,6 @@ slow_down_player_with_meat()
 
 	self setmovespeedscale( 1 );
 	self setclientfield( "holding_meat", 0 );
-}
-
-zmbvoxstartholdcounter()
-{
-	for ( meat_hold_counter = 0; isdefined( self._has_meat ) && self._has_meat; meat_hold_counter++ )
-	{
-		if ( meat_hold_counter >= 15 )
-		{
-			self thread maps\mp\zombies\_zm_audio_announcer::leaderdialogonplayer( "meat_hold" );
-			break;
-		}
-
-		wait 0.5;
-	}
 }
 
 reset_meat_when_player_downed()
@@ -2170,18 +1641,12 @@ reset_meat_when_player_downed()
 	level notify( "meat_reset" );
 }
 
-meat_last_stand_callback( einflictor, attacker, idamage, smeansofdeath, sweapon, vdir, shitloc, psoffsettime, deathanimduration )
-{
-	if ( isdefined( self._has_meat ) && self._has_meat )
-		level thread item_meat_drop( self.origin, self._meat_team );
-}
-
 reset_meat_when_player_disconnected()
 {
 	level endon( "meat_thrown" );
 	level endon( "meat_reset" );
 	level endon( "meat_end" );
-	team = self._meat_team;
+	team = self._encounters_team;
 
 	self waittill( "disconnect" );
 
@@ -2190,7 +1655,7 @@ reset_meat_when_player_disconnected()
 
 item_meat_drop( org, team )
 {
-	players = get_alive_players_on_meat_team( team );
+	players = get_alive_players_on_encounters_team( team );
 
 	if ( players.size > 0 )
 	{
@@ -2214,7 +1679,7 @@ player_has_meat( player )
 
 get_player_with_meat()
 {
-	players = get_players();
+	players = getPlayers();
 
 	for ( i = 0; i < players.size; i++ )
 	{
@@ -2270,99 +1735,10 @@ player_watch_grenade_throw()
 
 spawn_level_meat_manager()
 {
-/#
-	level.meat_manager = spawnstruct();
-	level.meat_manager.events = [];
-	level.meat_manager thread handle_meat_events();
-#/
 }
 
 add_meat_event( e, p1, p2, p3, p4 )
 {
-/#
-	event = spawnstruct();
-	event.e = e;
-	event.numparams = 0;
-	event.param = [];
-
-	if ( isdefined( p1 ) )
-	{
-		event.param[0] = p1;
-		event.numparams = 1;
-	}
-
-	if ( isdefined( p2 ) )
-	{
-		event.param[1] = p2;
-		event.numparams = 2;
-	}
-
-	if ( isdefined( p3 ) )
-	{
-		event.param[2] = p3;
-		event.numparams = 3;
-	}
-
-	if ( isdefined( p4 ) )
-	{
-		event.param[3] = p4;
-		event.numparams = 4;
-	}
-
-	if ( isdefined( level.meat_manager ) )
-		level.meat_manager.events[level.meat_manager.events.size] = event;
-#/
-}
-
-handle_meat_events()
-{
-	while ( true )
-	{
-		while ( self.events.size )
-		{
-			self handle_meat_event( self.events[0] );
-			arrayremoveindex( self.events, 0 );
-		}
-
-		wait 0.05;
-	}
-}
-
-paramstr( param )
-{
-/#
-	if ( !isdefined( param ) )
-		return "undefined";
-
-	if ( isplayer( param ) )
-		return param.name;
-
-	if ( isstring( param ) || isint( param ) || isfloat( param ) || isvec( param ) )
-		return param;
-
-	if ( isarray( param ) )
-		return "[]";
-
-	return "<other type>";
-#/
-}
-
-handle_meat_event( event )
-{
-/#
-	estr = "ZM MEAT: [" + event.e + "](";
-
-	for ( i = 0; i < event.numparams; i++ )
-	{
-		estr += paramstr( event.param[i] );
-
-		if ( i < event.numparams - 1 )
-			estr += ",";
-	}
-
-	estr += ") \\n";
-	println( estr );
-#/
 }
 
 spawn_side_trigger()
@@ -2413,172 +1789,38 @@ switch_team_has_meat_on_trigger()
 	}
 }
 
-startnextzmround_override( winner )
+wait_for_team_death( team )
 {
-	if ( !isonezmround() )
+	level endon( "meat_end" );
+	encounters_team = undefined;
+
+	while ( true )
 	{
-		if ( !waslastzmround() )
+		wait 1;
+
+		while ( isdefined( level._checking_for_save ) && level._checking_for_save )
+			wait 0.1;
+
+		alive_team_players = get_alive_players_on_encounters_team( team );
+
+		if ( alive_team_players.size > 0 )
 		{
-			nextzmhud( winner );
-			setmatchtalkflag( "DeadChatWithDead", level.voip.deadchatwithdead );
-			setmatchtalkflag( "DeadChatWithTeam", level.voip.deadchatwithteam );
-			setmatchtalkflag( "DeadHearTeamLiving", level.voip.deadhearteamliving );
-			setmatchtalkflag( "DeadHearAllLiving", level.voip.deadhearallliving );
-			setmatchtalkflag( "EveryoneHearsEveryone", level.voip.everyonehearseveryone );
-			setmatchtalkflag( "DeadHearKiller", level.voip.deadhearkiller );
-			setmatchtalkflag( "KillersHearVictim", level.voip.killershearvictim );
-			game["state"] = "playing";
-			level.allowbattlechatter = getgametypesetting( "allowBattleChatter" );
-
-			if ( isdefined( level.zm_switchsides_on_roundswitch ) && level.zm_switchsides_on_roundswitch )
-				set_game_var( "switchedsides", !get_game_var( "switchedsides" ) );
-			return true;
+			encounters_team = alive_team_players[0]._encounters_team;
+			continue;
 		}
+
+		break;
 	}
 
-	return false;
-}
-
-player_monitor_time_played_override()
-{
-	return;
-}
-
-initializeMatchStats_override()
-{
-	return;
-}
-
-track_players_intersection_tracker_override()
-{
-	return;
-}
-
-setclientfieldtoplayer_override( field_name, value )
-{
-	if ( !isDefined( self ) || !isPlayer( self ) || !isDefined( field_name ) || !isDefined( value ) )
-	{
+	if ( !isdefined( encounters_team ) )
 		return;
-	}
-	codesetplayerstateclientfield( self, field_name, value );
-}
 
-update_clientfields_override( player, type_struct )
-{
-	if ( !isDefined( player ) || !isPlayer( player ) || !isDefined( type_struct ) )
-	{
-		return;
-	}
-    name = player get_first_active_name( type_struct );
-    player setclientfieldtoplayer( type_struct.cf_slot_name, type_struct.info[name].slot_index );
+	winning_team = "A";
 
-    if ( 1 < type_struct.cf_lerp_bit_count )
-        player setclientfieldtoplayer( type_struct.cf_lerp_name, type_struct.info[name].state.players[player._player_entnum].lerp );
-}
+	if ( encounters_team == "A" )
+		winning_team = "B";
 
-watch_rampage_bookmark_override()
-{
-	return;
-}
-
-updategametypedvars_override()
-{
-	return;
-}
-
-
-round_logic_override( mode_logic_func )
-{
-	level.skit_vox_override = 1;
-
-	if ( isdefined( level.flag["start_zombie_round_logic"] ) )
-		flag_wait( "start_zombie_round_logic" );
-	flag_wait( "initial_blackscreen_passed" );
-	flag_wait( "start_encounters_match_logic" );
-
-	if ( !isdefined( game["gamemode_match"]["rounds"] ) )
-		game["gamemode_match"]["rounds"] = [];
-
-	set_gamemode_var_once( "current_round", 0 );
-	set_gamemode_var_once( "team_1_score", 0 );
-	set_gamemode_var_once( "team_2_score", 0 );
-
-	if ( isdefined( is_encounter() ) && is_encounter() )
-	{
-		[[ level._setteamscore ]]( "allies", get_gamemode_var( "team_2_score" ) );
-		[[ level._setteamscore ]]( "axis", get_gamemode_var( "team_1_score" ) );
-	}
-
-	flag_set( "pregame" );
-	waittillframeend;
-	level.gameended = 0;
-	cur_round = get_gamemode_var( "current_round" );
-	set_gamemode_var( "current_round", cur_round + 1 );
-	game["gamemode_match"]["rounds"][cur_round] = spawnstruct();
-	game["gamemode_match"]["rounds"][cur_round].mode = getdvar( "ui_gametype" );
-	level thread [[ mode_logic_func ]]();
-	flag_wait( "start_encounters_match_logic" );
-	level.gamestarttime = gettime();
-	level.gamelengthtime = undefined;
-	level notify( "clear_hud_elems" );
-
-	level waittill( "game_module_ended", winner );
-
-	game["gamemode_match"]["rounds"][cur_round].winner = winner;
-	level thread kill_all_zombies();
-	level.gameendtime = gettime();
-	level.gamelengthtime = level.gameendtime - level.gamestarttime;
-	level.gameended = 1;
-
-	if ( winner == "A" )
-	{
-		score = get_gamemode_var( "team_1_score" );
-		set_gamemode_var( "team_1_score", score + 1 );
-	}
-	else
-	{
-		score = get_gamemode_var( "team_2_score" );
-		set_gamemode_var( "team_2_score", score + 1 );
-	}
-
-	if ( isdefined( is_encounter() ) && is_encounter() )
-	{
-		[[ level._setteamscore ]]( "allies", get_gamemode_var( "team_2_score" ) );
-		[[ level._setteamscore ]]( "axis", get_gamemode_var( "team_1_score" ) );
-	}
-
-	level thread delete_corpses();
-	level delay_thread( 5, ::revive_laststand_players );
-	level notify( "clear_hud_elems" );
-
-	if ( startnextzmround_override( winner ) )
-	{
-		level clientnotify( "gme" );
-		exitLevel( 0 );
-		while ( true )
-			wait 1;
-	}
-
-	level.match_is_ending = 1;
-
-	if ( isdefined( is_encounter() ) && is_encounter() )
-	{
-		matchwonteam = "";
-
-		if ( get_gamemode_var( "team_1_score" ) > get_gamemode_var( "team_2_score" ) )
-			matchwonteam = "A";
-		else
-			matchwonteam = "B";
-
-		level thread maps\mp\zombies\_zm_audio::zmbvoxcrowdonteam( "win", matchwonteam, "lose" );
-		level thread maps\mp\zombies\_zm_audio_announcer::announcematchwinner( matchwonteam );
-		level create_final_score();
-		track_encounters_win_stats( matchwonteam );
-	}
-
-	maps\mp\zombies\_zm::intermission();
-	level.can_revive_game_module = undefined;
-	level notify( "end_game" );
+	level notify( "meat_end", winning_team );
 }
 
 start_round()
@@ -2600,7 +1842,7 @@ start_round()
 		level._module_round_hud.sort = 0;
 	}
 
-	players = get_players();
+	players = getPlayers();
 
 	for ( i = 0; i < players.size; i++ )
 		players[i] freeze_player_controls( 1 );
@@ -2609,16 +1851,13 @@ start_round()
 	label = &"Next Round Starting In  ^2";
 	level._module_round_hud.label = label;
 	level._module_round_hud settimer( 3 );
-	level thread maps\mp\zombies\_zm_audio_announcer::leaderdialog( "countdown" );
-	level thread maps\mp\zombies\_zm_audio::zmbvoxcrowdonteam( "clap" );
 	level thread maps\mp\zombies\_zm_audio::change_zombie_music( "round_start" );
 	level notify( "start_fullscreen_fade_out" );
 	wait 2;
 	level._module_round_hud fadeovertime( 1 );
 	level._module_round_hud.alpha = 0;
 	wait 1;
-	level thread play_sound_2d( "zmb_air_horn" );
-	players = get_players();
+	players = getPlayers();
 
 	for ( i = 0; i < players.size; i++ )
 	{

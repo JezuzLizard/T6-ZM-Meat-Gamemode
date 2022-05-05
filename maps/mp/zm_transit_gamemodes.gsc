@@ -135,58 +135,65 @@ town_meat_intermission()
 
 setup_standard_objects_override( location )
 {
-    structs = getstructarray( "game_mode_object" );
+	structs = getstructarray( "game_mode_object" );
 
-    foreach ( struct in structs )
-    {
-        if ( isdefined( struct.script_noteworthy ) && struct.script_noteworthy != location )
-            continue;
+	foreach ( struct in structs )
+	{
+		if ( isdefined( struct.script_noteworthy ) && struct.script_noteworthy != location )
+			continue;
+		if ( isDefined( struct.script_parameters ) && struct.script_parameters == "p6_zm_scoreboard_on" )
+		{
+			continue;
+		}
+		if ( isdefined( struct.script_string ) )
+		{
+			keep = 0;
+			tokens = strtok( struct.script_string, " " );
 
-        if ( isdefined( struct.script_string ) )
-        {
-            keep = 0;
-            tokens = strtok( struct.script_string, " " );
+			foreach ( token in tokens )
+			{
+				if ( token == "meat" && token != "zstandard" )
+				{
+					keep = 1;
+					continue;
+				}
 
-            foreach ( token in tokens )
-            {
-                if ( token == "meat" && token != "zstandard" )
-                {
-                    keep = 1;
-                    continue;
-                }
+				if ( token == "zstandard" )
+					keep = 1;
+			}
 
-                if ( token == "zstandard" )
-                    keep = 1;
-            }
+			if ( !keep )
+				continue;
+		}
 
-            if ( !keep )
-                continue;
-        }
+		barricade = spawn( "script_model", struct.origin );
+		barricade.angles = struct.angles;
+		barricade setmodel( struct.script_parameters );
+	}
 
-        barricade = spawn( "script_model", struct.origin );
-        barricade.angles = struct.angles;
-        barricade setmodel( struct.script_parameters );
-    }
+	objects = getentarray();
 
-    objects = getentarray();
+	foreach ( object in objects )
+	{
+		if ( !object is_survival_object() )
+			continue;
 
-    foreach ( object in objects )
-    {
-        if ( !object is_survival_object() )
-            continue;
+		if ( isdefined( object.spawnflags ) && object.spawnflags == 1 && object.classname != "trigger_multiple" )
+			object connectpaths();
 
-        if ( isdefined( object.spawnflags ) && object.spawnflags == 1 && object.classname != "trigger_multiple" )
-            object connectpaths();
+		object delete();
+	}
 
-        object delete();
-    }
-
-    if ( isdefined( level._classic_setup_func ) )
-        [[ level._classic_setup_func ]]();
+	if ( isdefined( level._classic_setup_func ) )
+		[[ level._classic_setup_func ]]();
 }
 
 spawn_player_barriers()
 {
+	if ( !getDvarIntDefault( "zmeat_spawn_barriers", 1 ) )
+	{
+		return;
+	}
 	collision_middle1 = spawn( "script_model", ( 1188.43, -64.4402, -55.875 ) );
 	collision_middle1 setModel( "collision_player_wall_512x512x10" );
 	collision_middle1.angles = ( 0, -138 + 90, 0 );

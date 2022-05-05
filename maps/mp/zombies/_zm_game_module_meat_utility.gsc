@@ -158,58 +158,6 @@ init_ammo_ring()
 	level._ammo_ring thread rotate_ring( 1 );
 }
 
-init_splitter_ring()
-{
-	if ( isdefined( level._splitter_ring ) )
-		return;
-
-	ring_pos = getstruct( level._meat_location + "_meat_splitter", "script_noteworthy" );
-
-	if ( !isdefined( ring_pos ) )
-	{
-		print( "no splitter ring" );
-		return;
-	}
-	level._splitter_ring = spawn( "script_model", ring_pos.origin );
-	level._splitter_ring.angles = ring_pos.angles;
-	//level._splitter_ring setmodel( ring_pos.script_parameters );
-	level._splitter_ring_trig1 = getent( level._meat_location + "_meat_splitter_trig_1", "targetname" );
-	level._splitter_ring_trig2 = getent( level._meat_location + "_meat_splitter_trig_2", "targetname" );
-	if ( !isDefined( level._splitter_ring_trig1 ) )
-	{
-		level._splitter_ring_trig1 = spawn( "trigger_radius", ring_pos.origin, 0, 100, 100 );
-	}
-	if ( !isDefined( level._splitter_ring_trig2 ) )
-	{
-		level._splitter_ring_trig2 = spawn( "trigger_radius", ring_pos.origin, 0, 100, 100 );
-	}
-	if ( isdefined( level._splitter_ring_trig1 ) && isdefined( level._splitter_ring_trig2 ) )
-	{
-		level._splitter_ring_trig1 enablelinkto();
-		level._splitter_ring_trig2 enablelinkto();
-	}
-	else
-	{
-		print( "no splitter ring trig" );
-		iprintlnbold( "BUG: missing at least one level._splitter_ring_trig" );
-	}
-	level._splitter_ring notsolid();
-	level._meat_icon = spawn( "script_model", level._splitter_ring.origin );
-	level._meat_icon setmodel( getweaponmodel( get_gamemode_var( "item_meat_name" ) ) );
-	level._meat_icon linkto( level._splitter_ring );
-	level._meat_icon setclientfield( "ring_glow_meatfx", 1 );
-
-	if ( isdefined( level._splitter_ring_trig1 ) && isdefined( level._splitter_ring_trig2 ) )
-	{
-		level._splitter_ring_trig1 linkto( level._splitter_ring );
-		level._splitter_ring_trig2 linkto( level._splitter_ring );
-		level thread ring_toss( level._splitter_ring_trig1, "splitter" );
-		level thread ring_toss( level._splitter_ring_trig2, "splitter" );
-	}
-
-	level._splitter_ring thread move_ring( ring_pos );
-}
-
 ring_toss( trig, type )
 {
 	level endon( "end_game" );
@@ -246,9 +194,6 @@ ring_toss_prize( type, trig )
 {
 	switch ( type )
 	{
-		case "splitter":
-			level thread meat_splitter( trig );
-			break;
 		case "minigun":
 			level thread minigun_prize( trig );
 			break;
@@ -256,75 +201,6 @@ ring_toss_prize( type, trig )
 			level thread ammo_prize( trig );
 			break;
 	}
-}
-
-meat_splitter( trig )
-{
-	level endon( "meat_grabbed" );
-	level endon( "meat_kicked" );
-
-	while ( isdefined( level.item_meat ) && level.item_meat istouching( trig ) )
-		wait 0.05;
-
-	exit_trig = getent( trig.target, "targetname" );
-	exit_struct = getstruct( trig.target, "targetname" );
-
-	while ( isdefined( level.item_meat ) && !level.item_meat istouching( exit_trig ) )
-		wait 0.05;
-
-	while ( isdefined( level.item_meat ) && level.item_meat istouching( exit_trig ) )
-		wait 0.05;
-
-	if ( !isdefined( level.item_meat ) )
-		return;
-
-	playfx( level._effect["fw_burst"], exit_trig.origin );
-	flare_dir = vectornormalize( anglestoforward( exit_struct.angles ) );
-	velocity = vectorscale( flare_dir, randomintrange( 400, 600 ) );
-	velocity1 = ( velocity[0] + 75, velocity[1] + 75, randomintrange( 75, 125 ) );
-	velocity2 = ( velocity[0] - 75, velocity[1] - 75, randomintrange( 75, 125 ) );
-	velocity3 = ( velocity[0], velocity[1], 100 );
-	level._fake_meats = [];
-	level._meat_splitter_activated = 1;
-	org = exit_trig.origin;
-	player = getPlayers()[0];
-	player._spawning_meat = 1;
-	player endon( "disconnect" );
-	thread split_meat( player, org, velocity1, velocity2, velocity );
-	wait 0.1;
-
-	while ( isdefined( level.splitting_meat ) && level.splitting_meat )
-		wait 0.05;
-
-	player._spawning_meat = 0;
-}
-
-split_meat( player, org, vel1, vel2, vel3 )
-{
-	level.splitting_meat = 1;
-	level.item_meat cleanup_meat();
-	wait_network_frame();
-	level._fake_meats[level._fake_meats.size] = player magicgrenadetype( get_gamemode_var( "item_meat_name" ), org, vel1 );
-	wait_network_frame();
-	level._fake_meats[level._fake_meats.size] = player magicgrenadetype( get_gamemode_var( "item_meat_name" ), org, vel2 );
-	wait_network_frame();
-	level._fake_meats[level._fake_meats.size] = player magicgrenadetype( get_gamemode_var( "item_meat_name" ), org, vel3 );
-	real_meat = random( level._fake_meats );
-
-	foreach ( meat in level._fake_meats )
-	{
-		if ( real_meat != meat )
-		{
-			meat._fake_meat = 1;
-			meat thread maps\mp\gametypes_zm\zmeat::delete_on_real_meat_pickup();
-			continue;
-		}
-
-		meat._fake_meat = 0;
-		level.item_meat = meat;
-	}
-
-	level.splitting_meat = 0;
 }
 
 minigun_prize( trig )

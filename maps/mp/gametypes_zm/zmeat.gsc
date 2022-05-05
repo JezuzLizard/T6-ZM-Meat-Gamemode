@@ -88,7 +88,6 @@ meat_hub_start_func()
 	level thread spawn_meat_zombies();
 	level thread monitor_meat_on_team();
 	level thread init_minigun_ring();
-	level thread init_splitter_ring();
 	level thread init_ammo_ring();
 	level thread hide_non_meat_objects();
 	level thread setup_meat_world_objects();
@@ -268,7 +267,7 @@ item_meat_watch_for_throw()
 		if ( isdefined( who._has_meat_hud ) )
 			who._has_meat_hud destroy();
 
-		assign_meat_to_team( undefined, level._meat_on_team );
+		//assign_meat_to_team( undefined, level._meat_on_team );
 	}
 }
 
@@ -1587,7 +1586,11 @@ assign_meat_to_team( player, encounters_team )
 		meat_team = encounters_team;
 	}
 
-	level._meat_on_team = meat_team;
+	if ( !isDefined( player ) )
+	{
+		level._meat_on_team = meat_team;
+		level notify( "meat_assigned_to_team" );
+	}
 	teamplayers = get_players_on_encounters_team( meat_team );
 	for ( i = 0; i < players.size; i++ )
 	{
@@ -1605,7 +1608,6 @@ assign_meat_to_team( player, encounters_team )
 			players[i] thread reset_meat_when_player_disconnected();
 		}
 	}
-	level notify( "meat_assigned_to_team" );
 }
 
 slow_down_player_with_meat()

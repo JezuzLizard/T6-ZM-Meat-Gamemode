@@ -18,26 +18,6 @@
 
 main()
 {
-	level.zm_disable_recording_stats = true;
-	game[ "gamestarted" ] = undefined;
-	level.timelimitoverride = true;
-	maps\mp\gametypes_zm\_zm_gametype::main();
-	//registerclientfield( "allplayers", "holding_meat", 7000, 1, "int" );
-	//registerclientfield( "scriptmover", "ring_glowfx", 7000, 1, "int" );
-	//registerclientfield( "scriptmover", "ring_glow_meatfx", 7000, 1, "int" );
-	level.onprecachegametype = ::onprecachegametype;
-	level.onstartgametype = ::onstartgametype;
-	set_game_var( "ZM_roundLimit", 5 );
-	set_game_var( "ZM_scoreLimit", 5 );
-	set_gamemode_var( "match_end_notify", "meat_end" );
-	set_gamemode_var( "match_end_func", ::meat_end_match );
-	level._no_static_unitriggers = 1;
-	level._game_module_player_damage_callback = maps\mp\gametypes_zm\_zm_gametype::game_module_player_damage_callback;
-	level.no_end_game_check = 1;
-	maps\mp\gametypes_zm\_zm_gametype::post_gametype_main( "zmeat" );
-	level thread maps\mp\gametypes_zm\_zm_gametype::init();
-	level.zm_roundswitch = 1;
-	level.zm_switchsides_on_roundswitch = 1;
 	level._effect["meat_marker"] = loadfx( "maps/zombie/fx_zmb_meat_marker" );
 	level._effect["butterflies"] = loadfx( "maps/zombie/fx_zmb_impact_noharm" );
 	level._effect["meat_glow"] = loadfx( "maps/zombie/fx_zmb_meat_glow" );
@@ -51,6 +31,20 @@ main()
 	level._effect["fw_pre_burst"] = loadfx( "maps/zombie/fx_zmb_race_fireworks_burst_small" );
 	level._effect["meat_bounce"] = loadfx( "maps/zombie/fx_zmb_meat_collision_glow" );
 	level._effect["ring_glow"] = loadfx( "misc/fx_zombie_powerup_on" );
+	level.zm_disable_recording_stats = true;
+	game[ "gamestarted" ] = undefined;
+	level.timelimitoverride = true;
+	maps\mp\gametypes_zm\_zm_gametype::main();
+	level.onprecachegametype = ::onprecachegametype;
+	level.onstartgametype = ::onstartgametype;
+	level._game_module_custom_spawn_init_func = maps\mp\gametypes_zm\_zm_gametype::custom_spawn_init_func;
+	level._no_static_unitriggers = 1;
+	level._game_module_player_damage_callback = maps\mp\gametypes_zm\_zm_gametype::game_module_player_damage_callback;
+	level.zm_mantle_over_40_move_speed_override = ::handle_super_sprint_mantle;
+	level.no_end_game_check = 1;
+	level._game_module_game_end_check = ::always_false;
+	maps\mp\gametypes_zm\_zm_gametype::post_gametype_main( "zgrief" );
+	level thread maps\mp\gametypes_zm\_zm_gametype::init();
 	level.can_revive_game_module = ::can_revive;
 	onplayerconnect_callback( ::meat_on_player_connect );
 	init_animtree();
@@ -96,7 +90,7 @@ meat_hub_start_func()
 	level._zombie_spawning = 0;
 	level._poi_override = ::meat_poi_override_func;
 	level._meat_on_team = undefined;
-	level._meat_zombie_spawn_timer = 2;
+	level._meat_zombie_spawn_timer = 1;
 	level._meat_zombie_spawn_health = 1;
 	level._minigun_time_override = 15;
 	level._get_game_module_players = ::get_game_module_players;
@@ -141,7 +135,7 @@ meat_on_player_connect()
 		for ( i = 0; i < level.zmeat_test_bots; i++ )
 		{
 			bot = addTestClient();
-			//bot.pers[ "isBot" ] = true;
+			bot.pers[ "isBot" ] = true;
 		}
 	}
 }
@@ -156,11 +150,11 @@ meat_on_player_disconnect()
 	for ( i = 0; i < players.size; i++ )
 		team_counts[players[i]._encounters_team] += 1;
 
-	if ( team_counts["A"] == 0 )
-		maps\mp\gametypes_zm\_zm_gametype::end_rounds_early( "B" );
+	//if ( team_counts["A"] == 0 )
+	//	maps\mp\gametypes_zm\_zm_gametype::end_rounds_early( "B" );
 
-	if ( team_counts["B"] == 0 )
-		maps\mp\gametypes_zm\_zm_gametype::end_rounds_early( "A" );
+	//if ( team_counts["B"] == 0 )
+	//	maps\mp\gametypes_zm\_zm_gametype::end_rounds_early( "A" );
 }
 
 wait_for_player_disconnect()
@@ -263,9 +257,6 @@ item_meat_watch_for_throw()
 		if ( isdefined( who._spawning_meat ) && who._spawning_meat )
 			continue;
 		who._has_meat = 0;
-
-		if ( isdefined( who._has_meat_hud ) )
-			who._has_meat_hud destroy();
 
 		//assign_meat_to_team( undefined, level._meat_on_team );
 	}
@@ -436,12 +427,11 @@ cleanup_meat()
 	self delete();
 }
 
+#using_animtree("zombie_meat");
 init_animtree()
 {
-	scriptmodelsuseanimtree( -1 );
+	scriptmodelsuseanimtree( #animtree );
 }
-
-#using_animtree("zombie_meat");
 
 animate_meat( grenade )
 {
@@ -453,7 +443,7 @@ animate_meat( grenade )
 		grenade hide();
 		altmodel = spawn( "script_model", grenade.origin );
 		altmodel setmodel( get_gamemode_var( "item_meat_model" ) );
-		altmodel useanimtree( -1 );
+		altmodel useanimtree( #animtree );
 		altmodel.angles = grenade.angles;
 		altmodel linkto( grenade, "", ( 0, 0, 0 ), ( 0, 0, 0 ) );
 		//altmodel setanim( %o_zombie_head_idle_v1 );
@@ -572,7 +562,7 @@ kick_meat_monitor()
 			if ( isdefined( level._last_person_to_throw_meat ) && player == level._last_person_to_throw_meat && curr_time - level._last_person_to_throw_meat_time <= kick_meat_timeout )
 				continue;
 
-			if ( distancesquared( player.origin, self.origin ) < 2304 && player issprinting() && !player usebuttonpressed() )
+			if ( distancesquared( player.origin, self.origin ) < 48 * 48 && player issprinting() && !player usebuttonpressed() )
 			{
 				if ( isdefined( player._encounters_team ) && isdefined( level._meat_on_team ) && level._meat_on_team == player._encounters_team )
 				{
@@ -921,21 +911,9 @@ can_spike_meat()
 	return false;
 }
 
-start_encounters_round_logic()
-{
-	if ( isdefined( level.flag["start_zombie_round_logic"] ) )
-		flag_wait( "start_zombie_round_logic" );
-
-	flag_wait( "initial_players_connected" );
-
-	if ( !flag( "start_encounters_match_logic" ) )
-		flag_set( "start_encounters_match_logic" );
-}
-
 onstartgametype()
 {
-	thread start_encounters_round_logic();
-	maps\mp\gametypes_zm\_zm_gametype::rungametypemain( "zmeat", ::meat_hub_start_func, 1 );
+	maps\mp\gametypes_zm\_zm_gametype::rungametypemain( "zmeat", ::meat_hub_start_func, false );
 }
 
 hide_non_meat_objects()
@@ -1014,73 +992,38 @@ spawn_meat_zombies()
 	force_riser = 0;
 	force_chaser = 0;
 	num = 0;
-	max_ai_num = 15;
+	max_ai_num = 24;
 	//level waittill( "meat_grabbed" );
 	level waittill( "meat_assigned_to_team" );
 	while ( true )
 	{
+		wait( level._meat_zombie_spawn_timer );
+		if ( getDvarIntDefault( "zmeat_disable_zombie_spawning", 0 ) )
+		{
+			continue;
+		}
 		ai = getaiarray( level.zombie_team );
-
 		if ( ai.size > max_ai_num )
 			wait 0.1;
 		else
 		{
-			if ( num % 2 == 0 )
-				spawn_points = level._meat_team_1_zombie_spawn_points;
-			else
-				spawn_points = level._meat_team_2_zombie_spawn_points;
-
-			num++;
-			spawn_point = undefined;
-			dist = 512;
-			distcheck = dist * dist;
-			startindex = randomint( spawn_points.size );
-
-			while ( !isdefined( spawn_point ) )
+			side = level._meat_on_team;
+			if ( isDefined( side ) )
 			{
-				for ( i = 0; i < spawn_points.size; i++ )
-				{
-					index = ( startindex + i ) % spawn_points.size;
-					point = spawn_points[index];
-
-					if ( num % 2 == 0 )
-						players = get_players_on_encounters_team( "A" );
-					else
-						players = get_players_on_encounters_team( "B" );
-
-					clear = 1;
-
-					foreach ( player in players )
-					{
-						if ( distancesquared( player.origin, point.origin ) < distcheck )
-							clear = 0;
-					}
-
-					if ( clear )
-					{
-						spawn_point = point;
-						break;
-					}
-				}
-
-				if ( dist <= 128 )
-					spawn_point = point;
-				else
-				{
-					dist /= 4;
-					distcheck = dist * dist;
-				}
-
-				wait 0.05;
+				spawn_points = level._zmeat_zombie_spawn_locations[ side ];
 			}
+			else 
+			{
+				random_side = ( cointoss() ? "A" : "B" );
+				spawn_points = level._zmeat_zombie_spawn_locations[ random_side ];
+			}
+			spawn_points = array_randomize( spawn_points );
 
-			zombie = spawn_meat_zombie( level.meat_spawners[0], "meat_zombie", spawn_point, level._meat_zombie_spawn_health );
+			zombie = spawn_meat_zombie( level.meat_spawners[0], "meat_zombie", spawn_points[ 0 ], level._meat_zombie_spawn_health );
 
 			if ( isdefined( zombie ) )
-				zombie maps\mp\zombies\_zm_game_module::make_supersprinter();
+				zombie thread make_super_sprinter_after_time( 0.25 );
 		}
-
-		wait( level._meat_zombie_spawn_timer );
 	}
 }
 
@@ -1100,15 +1043,15 @@ spawn_meat_zombie( spawner, target_name, spawn_point, round_number )
 	level.zombie_spawn_locations = [];
 	level.zombie_spawn_locations[level.zombie_spawn_locations.size] = spawn_point;
 	zombie = maps\mp\zombies\_zm_utility::spawn_zombie( spawner, target_name, spawn_point, round_number );
-
-	if ( isdefined( zombie ) )
-	{
-		zombie thread maps\mp\zombies\_zm_spawner::zombie_spawn_init();
-		zombie thread maps\mp\zombies\_zm::round_spawn_failsafe();
-	}
 	spawner._spawning = undefined;
 	level._meat_zombie_spawning = 0;
 	return zombie;
+}
+
+make_super_sprinter_after_time( time )
+{
+	wait time;
+	self maps\mp\zombies\_zm_game_module::make_supersprinter();
 }
 
 monitor_meat_on_team()
@@ -1325,9 +1268,6 @@ item_meat_watch_trigger( meat_id, trigger, callback, playersoundonuse, npcsoundo
 	{
 		trigger waittill( "usetrigger", player );
 
-		if ( !isalive( player ) )
-			continue;
-
 		if ( !is_player_valid( player ) )
 			continue;
 
@@ -1528,9 +1468,6 @@ meat_end_match( winning_team )
 			players[i].has_powerup_weapon = 0;
 		}
 
-		if ( isdefined( players[i]._has_meat_hud ) )
-			players[i]._has_meat_hud destroy();
-
 		if ( players[i] hasweapon( get_gamemode_var( "item_meat_name" ) ) )
 		{
 			players[i] takeweapon( get_gamemode_var( "item_meat_name" ) );
@@ -1592,20 +1529,20 @@ assign_meat_to_team( player, encounters_team )
 		level notify( "meat_assigned_to_team" );
 	}
 	teamplayers = get_players_on_encounters_team( meat_team );
-	for ( i = 0; i < players.size; i++ )
+	for ( i = 0; i < teamplayers.size; i++ )
 	{
-		if ( !isdefined( players[i] ) )
+		if ( !isdefined( teamplayers[i] ) )
 			continue;
 
-		if ( isdefined( player ) && players[i] == player )
+		if ( isdefined( player ) && teamplayers[i] == player )
 		{
-			if ( isdefined( players[i]._has_meat ) && players[i]._has_meat )
+			if ( isdefined( teamplayers[i]._has_meat ) && teamplayers[i]._has_meat )
 				continue;
 
-			players[i]._has_meat = 1;
-			players[i] thread slow_down_player_with_meat();
-			players[i] thread reset_meat_when_player_downed();
-			players[i] thread reset_meat_when_player_disconnected();
+			teamplayers[i]._has_meat = 1;
+			teamplayers[i] thread slow_down_player_with_meat();
+			teamplayers[i] thread reset_meat_when_player_downed();
+			teamplayers[i] thread reset_meat_when_player_disconnected();
 		}
 	}
 }
@@ -1870,4 +1807,28 @@ start_round()
 	flag_set( "start_encounters_match_logic" );
 	flag_clear( "pregame" );
 	level._module_round_hud destroy();
+}
+
+handle_super_sprint_mantle()
+{
+    traversealias = "barrier_walk";
+
+    switch ( self.zombie_move_speed )
+    {
+        case "chase_bus":
+		case "super_sprint":
+			traversealias = "barrier_sprint";
+			break;
+        default:
+/#
+            assertmsg( "Zombie move speed of '" + self.zombie_move_speed + "' is not supported for mantle_over_40." );
+#/
+    }
+
+    return traversealias;
+}
+
+always_false()
+{
+	return false;
 }

@@ -8,7 +8,6 @@
 main()
 {
 	replaceFunc( maps\mp\zombies\_zm::player_monitor_time_played, ::player_monitor_time_played_override );
-	replaceFunc( maps\mp\gametypes_zm\_zm_gametype::round_logic, ::round_logic_override );
 	replaceFunc( maps\mp\zombies\_zm_stats::initializeMatchStats, ::initializeMatchStats_override );
 	replaceFunc( maps\mp\zombies\_zm_utility::track_players_intersection_tracker, ::track_players_intersection_tracker_override );
 	replaceFunc( maps\mp\_utility::setclientfieldtoplayer, ::setclientfieldtoplayer_override );
@@ -18,43 +17,123 @@ main()
 	replaceFunc( maps\mp\zombies\_zm::getFreeSpawnpoint, ::getFreeSpawnpoint_override );
 	replaceFunc( maps\mp\gametypes_zm\_globallogic_ui::setupcallbacks, ::setupcallbacks_override );
 	level._game_module_player_laststand_callback = ::meat_last_stand_callback;
+	level thread on_player_connect();
 }
 
 init()
 {
 	level.autoassign = ::menuautoassign_override;
+	level.callbackactordamage = ::actor_damage_override_wrapper;
+	level.default_solo_laststandpistol = "m1911_zm";
+}
+
+actor_damage_override( inflictor, attacker, damage, flags, meansofdeath, weapon, vpoint, vdir, shitloc, psoffsettime, boneindex )
+{
+	if ( !isdefined( self ) || !isdefined( attacker ) )
+		return damage;
+
+	if ( weapon == "tazer_knuckles_zm" || weapon == "jetgun_zm" )
+		self.knuckles_extinguish_flames = 1;
+	else if ( weapon != "none" )
+		self.knuckles_extinguish_flames = undefined;
+
+	if ( isdefined( attacker.animname ) && attacker.animname == "quad_zombie" )
+	{
+		if ( isdefined( self.animname ) && self.animname == "quad_zombie" )
+			return 0;
+	}
+
+	if ( !isplayer( attacker ) && isdefined( self.non_attacker_func ) )
+	{
+		if ( isdefined( self.non_attack_func_takes_attacker ) && self.non_attack_func_takes_attacker )
+			return self [[ self.non_attacker_func ]]( damage, weapon, attacker );
+		else
+			return self [[ self.non_attacker_func ]]( damage, weapon );
+	}
+
+	if ( !isplayer( attacker ) && !isplayer( self ) )
+		return damage;
+
+	if ( !isdefined( damage ) || !isdefined( meansofdeath ) )
+		return damage;
+
+	if ( meansofdeath == "" )
+		return damage;
+
+	old_damage = damage;
+	final_damage = damage;
+
+	if ( isdefined( self.actor_damage_func ) )
+		final_damage = [[ self.actor_damage_func ]]( inflictor, attacker, damage, flags, meansofdeath, weapon, vpoint, vdir, shitloc, psoffsettime, boneindex );
+/#
+	if ( getdvarint( _hash_5ABA6445 ) )
+		println( "Perk/> Damage Factor: " + final_damage / old_damage + " - Pre Damage: " + old_damage + " - Post Damage: " + final_damage );
+#/
+	if ( attacker.classname == "script_vehicle" && isdefined( attacker.owner ) )
+		attacker = attacker.owner;
+
+	if ( isdefined( self.in_water ) && self.in_water )
+	{
+		if ( int( final_damage ) >= self.health )
+			self.water_damage = 1;
+	}
+
+	attacker thread maps\mp\gametypes_zm\_weapons::checkhit( weapon );
+
+	if ( attacker maps\mp\zombies\_zm_pers_upgrades_functions::pers_mulit_kill_headshot_active() && is_headshot( weapon, shitloc, meansofdeath ) )
+		final_damage *= 2;
+
+	if ( isdefined( level.headshots_only ) && level.headshots_only && isdefined( attacker ) && isplayer( attacker ) )
+	{
+		if ( meansofdeath == "MOD_MELEE" && ( shitloc == "head" || shitloc == "helmet" ) )
+			return int( final_damage );
+
+		if ( is_explosive_damage( meansofdeath ) )
+			return int( final_damage );
+		else if ( !is_headshot( weapon, shitloc, meansofdeath ) )
+			return 0;
+	}
+	if ( is_melee_weapon( weapon ) )
+	{
+		final_damage /= 2;
+	}
+	return int( final_damage );
+}
+
+actor_damage_override_wrapper( inflictor, attacker, damage, flags, meansofdeath, weapon, vpoint, vdir, shitloc, psoffsettime, boneindex )
+{
+	damage_override = self actor_damage_override( inflictor, attacker, damage, flags, meansofdeath, weapon, vpoint, vdir, shitloc, psoffsettime, boneindex );
+
+	if ( damage_override < self.health || !( isdefined( self.dont_die_on_me ) && self.dont_die_on_me ) )
+		self finishactordamage( inflictor, attacker, damage_override, flags, meansofdeath, weapon, vpoint, vdir, shitloc, psoffsettime, boneindex );
+}
+
+on_player_connect()
+{
+	while ( true )
+	{
+		level waittill( "connected", player );
+		player thread print_origin();
+	}
+}
+
+print_origin()
+{
+	self endon( "disconnect" );
+	while ( true )
+	{
+		if ( self meleeButtonPressed() )
+		{
+			logprint( self.origin + "\n" );
+		}
+		wait 0.05;
+	}
 }
 
 meat_last_stand_callback( einflictor, attacker, idamage, smeansofdeath, sweapon, vdir, shitloc, psoffsettime, deathanimduration )
 {
 	if ( isdefined( self._has_meat ) && self._has_meat )
 		level thread item_meat_drop( self.origin, self._encounters_team );
-}
-
-startnextzmround_override( winner )
-{
-	if ( !isonezmround() )
-	{
-		if ( !waslastzmround() )
-		{
-			nextzmhud( winner );
-			setmatchtalkflag( "DeadChatWithDead", level.voip.deadchatwithdead );
-			setmatchtalkflag( "DeadChatWithTeam", level.voip.deadchatwithteam );
-			setmatchtalkflag( "DeadHearTeamLiving", level.voip.deadhearteamliving );
-			setmatchtalkflag( "DeadHearAllLiving", level.voip.deadhearallliving );
-			setmatchtalkflag( "EveryoneHearsEveryone", level.voip.everyonehearseveryone );
-			setmatchtalkflag( "DeadHearKiller", level.voip.deadhearkiller );
-			setmatchtalkflag( "KillersHearVictim", level.voip.killershearvictim );
-			game["state"] = "playing";
-			level.allowbattlechatter = getgametypesetting( "allowBattleChatter" );
-
-			if ( isdefined( level.zm_switchsides_on_roundswitch ) && level.zm_switchsides_on_roundswitch )
-				set_game_var( "switchedsides", !get_game_var( "switchedsides" ) );
-			return true;
-		}
-	}
-
-	return false;
 }
 
 player_monitor_time_played_override()
@@ -74,26 +153,24 @@ track_players_intersection_tracker_override()
 
 setclientfieldtoplayer_override( field_name, value )
 {
-	return;
-	// if ( !isDefined( self ) || !isPlayer( self ) || self isTestClient() || !isDefined( field_name ) || !isDefined( value ) )
-	// {
-	// 	return;
-	// }
-	// codesetplayerstateclientfield( self, field_name, value );
+	if ( !isDefined( self ) || !isPlayer( self ) || self isTestClient() || !isDefined( field_name ) || !isDefined( value ) )
+	{
+		return;
+	}
+	codesetplayerstateclientfield( self, field_name, value );
 }
 
 update_clientfields_override( player, type_struct )
 {
-	return;
-	// if ( !isDefined( player ) || !isPlayer( player ) || self isTestClient() || !isDefined( type_struct ) )
-	// {
-	// 	return;
-	// }
-    // name = player get_first_active_name( type_struct );
-    // player setclientfieldtoplayer( type_struct.cf_slot_name, type_struct.info[name].slot_index );
+	if ( !isDefined( player ) || !isPlayer( player ) || player isTestClient() || !isDefined( type_struct ) )
+	{
+		return;
+	}
+    name = player get_first_active_name( type_struct );
+    player setclientfieldtoplayer( type_struct.cf_slot_name, type_struct.info[name].slot_index );
 
-    // if ( 1 < type_struct.cf_lerp_bit_count )
-    //     player setclientfieldtoplayer( type_struct.cf_lerp_name, type_struct.info[name].state.players[player._player_entnum].lerp );
+    if ( 1 < type_struct.cf_lerp_bit_count )
+        player setclientfieldtoplayer( type_struct.cf_lerp_name, type_struct.info[name].state.players[player._player_entnum].lerp );
 }
 
 watch_rampage_bookmark_override()
@@ -163,90 +240,6 @@ play_ambient_zombie_vocals_override()
 	}
 }
 
-round_logic_override( mode_logic_func )
-{
-	level.skit_vox_override = 1;
-
-	if ( isdefined( level.flag["start_zombie_round_logic"] ) )
-		flag_wait( "start_zombie_round_logic" );
-	flag_wait( "initial_blackscreen_passed" );
-	flag_wait( "start_encounters_match_logic" );
-
-	if ( !isdefined( game["gamemode_match"]["rounds"] ) )
-		game["gamemode_match"]["rounds"] = [];
-
-	set_gamemode_var_once( "current_round", 0 );
-	set_gamemode_var_once( "team_1_score", 0 );
-	set_gamemode_var_once( "team_2_score", 0 );
-
-	if ( isdefined( is_encounter() ) && is_encounter() )
-	{
-		[[ level._setteamscore ]]( "allies", get_gamemode_var( "team_2_score" ) );
-		[[ level._setteamscore ]]( "axis", get_gamemode_var( "team_1_score" ) );
-	}
-
-	flag_set( "pregame" );
-	waittillframeend;
-	level.gameended = 0;
-	cur_round = get_gamemode_var( "current_round" );
-	set_gamemode_var( "current_round", cur_round + 1 );
-	game["gamemode_match"]["rounds"][cur_round] = spawnstruct();
-	game["gamemode_match"]["rounds"][cur_round].mode = getdvar( "ui_gametype" );
-	level thread [[ mode_logic_func ]]();
-	flag_wait( "start_encounters_match_logic" );
-	level.gamestarttime = gettime();
-	level.gamelengthtime = undefined;
-	level notify( "clear_hud_elems" );
-
-	level waittill( "game_module_ended", winner );
-
-	game["gamemode_match"]["rounds"][cur_round].winner = winner;
-	level thread kill_all_zombies();
-	level.gameendtime = gettime();
-	level.gamelengthtime = level.gameendtime - level.gamestarttime;
-	level.gameended = 1;
-
-	if ( winner == "A" )
-	{
-		score = get_gamemode_var( "team_1_score" );
-		set_gamemode_var( "team_1_score", score + 1 );
-	}
-	else
-	{
-		score = get_gamemode_var( "team_2_score" );
-		set_gamemode_var( "team_2_score", score + 1 );
-	}
-
-	if ( isdefined( is_encounter() ) && is_encounter() )
-	{
-		[[ level._setteamscore ]]( "allies", get_gamemode_var( "team_2_score" ) );
-		[[ level._setteamscore ]]( "axis", get_gamemode_var( "team_1_score" ) );
-	}
-
-	level thread delete_corpses();
-	level delay_thread( 5, ::revive_laststand_players );
-	level notify( "clear_hud_elems" );
-
-	if ( startnextzmround_override( winner ) )
-	{
-		//level clientnotify( "gme" );
-		exitLevel( false );
-		while ( true )
-			wait 1;
-	}
-
-	level.match_is_ending = 1;
-
-	if ( isdefined( is_encounter() ) && is_encounter() )
-	{
-		level create_final_score();
-	}
-
-	maps\mp\zombies\_zm::intermission();
-	level.can_revive_game_module = undefined;
-	level notify( "end_game" );
-}
-
 getFreeSpawnpoint_override( spawnpoints, player )
 {
 	if ( !isdefined( spawnpoints ) )
@@ -255,7 +248,6 @@ getFreeSpawnpoint_override( spawnpoints, player )
 	}
 	foreach ( spawnpoint in spawnpoints )
 	{
-		print( "getFreeSpawnpoint() spawnpoint.script_int = " + spawnpoint.script_int + " desired = " + self.spawnpoint_desired_script_int );
 		if ( spawnpoint.script_int == self.spawnpoint_desired_script_int )
 		{
 			if ( isDefined( spawnpoint.player_name ) && spawnpoint.player_name == self.name )
@@ -270,7 +262,6 @@ getFreeSpawnpoint_override( spawnpoints, player )
 		}
 	}
 	//All spawnpoints taken by previous players try to remove old spawnpoints from disconnected players
-	print( "getFreeSpawnpoint() is trying to reuse old spawnpoints" );
 	foreach ( spawnpoint in spawnpoints )
 	{
 		spawnpoint_is_active = false;
@@ -291,7 +282,6 @@ getFreeSpawnpoint_override( spawnpoints, player )
 			}
 		}
 	}
-	print( "getFreeSpawnpoint() is returning the spawnpoint with the same script int as a failsafe THIS SHOULD NOT HAPPEN!" );
 	foreach ( spawnpoint in spawnpoints )
 	{
 		if ( spawnpoint.script_int == self.spawnpoint_desired_script_int )

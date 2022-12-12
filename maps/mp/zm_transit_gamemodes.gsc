@@ -48,14 +48,14 @@ init()
 
 	add_map_location_gamemode("zgrief", "transit", maps\mp\zm_transit_grief_station::precache, maps\mp\zm_transit_grief_station::main);
 	add_map_location_gamemode("zgrief", "farm", maps\mp\zm_transit_grief_farm::precache, maps\mp\zm_transit_grief_farm::main);
-	add_map_location_gamemode("zgrief", "town", maps\mp\zm_transit_grief_town::precache, maps\mp\zm_transit_grief_town::main);
+	add_map_location_gamemode("zgrief", "town", ::zmeat_town_precache, ::zmeat_town_main);
 
 //	add_map_location_gamemode("zcleansed", "farm", maps\mp\zm_transit_turned_farm::precache, maps\mp\zm_transit_turned_farm::main);
 //	add_map_location_gamemode("zcleansed", "cornfield", maps\mp\zm_transit_turned_cornfield::precache, maps\mp\zm_transit_turned_cornfield::main);
 //	add_map_location_gamemode("zcleansed", "diner", maps\mp\zm_transit_turned_diner::precache, maps\mp\zm_transit_turned_diner::main);
 //	add_map_location_gamemode("zcleansed", "town", maps\mp\zm_transit_turned_town::precache, maps\mp\zm_transit_turned_town::main);
 
-	scripts\zm\_gametype_setup::add_struct_location_gamemode_func( "zmeat", "town", ::zmeat_town_struct_init );
+	scripts\zm\_gametype_setup::add_struct_location_gamemode_func( "grief", "town", ::zmeat_town_struct_init );
 }
 
 zmeat_town_struct_init()
@@ -115,8 +115,14 @@ zmeat_town_main()
 	level._meat_start_points[ "B" ] = ( 1648.84, -319.649, -61.875 + 5 );
 	level._meat_team_1_zombie_spawn_points = getstructarray("meat_2_team_1_zombie_spawn_points","targetname");
 	level._meat_team_2_zombie_spawn_points = getstructarray("meat_2_team_2_zombie_spawn_points","targetname");
-	//level._meat_team_1_volume = getent("meat_2_team_1_volume","targetname");
-	//level._meat_team_2_Volume = getent("meat_2_team_2_volume","targetname");
+	register_zmeat_riser_location( ( 1583.74, 665.528, -61.875 ), "A" );
+	register_zmeat_riser_location( ( 1239.35, 641.686, -55.875 ), "A" );
+	register_zmeat_riser_location( ( 1933.47, -525.591, -61.875 ), "A" );
+	register_zmeat_riser_location( ( 1973.37, -312.483, -60.0627 ), "A" );
+	register_zmeat_riser_location( ( 824.812, -405.236, -61.875 ), "B" );
+	register_zmeat_riser_location( ( 856.151, -649.651, -55.875 ), "B" );
+	register_zmeat_riser_location( ( 1618.35, -1215.13, -61.875 ), "B" );
+	register_zmeat_riser_location( ( 1327.61, -1128, -61.875 ), "B" );
 	flag_clear("zombie_drop_powerups");
 	level.custom_intermission  = ::town_meat_intermission;
 	level.zombie_vars["zombie_intermission_time"] = 5;
@@ -217,4 +223,22 @@ spawn_player_barriers()
 	collision_middle7 = spawn( "script_model", ( 1527.66, -1025.5, -46.03 ) );
 	collision_middle7 setModel( "collision_player_wall_512x512x10" );
 	collision_middle7.angles = ( 0, 81 + 90, 0 );
+}
+
+register_zmeat_riser_location( origin, side )
+{
+	if ( !isDefined( level._zmeat_zombie_spawn_locations ) )
+	{
+		level._zmeat_zombie_spawn_locations = [];
+	}
+	if ( !isDefined( level._zmeat_zombie_spawn_locations[ side ] ) )
+	{
+		level._zmeat_zombie_spawn_locations[ side ] = [];
+	}
+	struct = spawnStruct();
+	struct.script_string = "find_flesh";
+	struct.origin = origin;
+	struct.angles = ( 0, 0, 0 );
+	struct.script_noteworthy = "riser_location";
+	level._zmeat_zombie_spawn_locations[ side ][ level._zmeat_zombie_spawn_locations[ side ].size ] = struct;
 }

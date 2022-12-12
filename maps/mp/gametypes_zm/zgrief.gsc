@@ -22,9 +22,9 @@ main()
 	game[ "gamestarted" ] = undefined;
 	level.timelimitoverride = true;
 	maps\mp\gametypes_zm\_zm_gametype::main();
-	registerclientfield( "allplayers", "holding_meat", 7000, 1, "int" );
-	registerclientfield( "scriptmover", "ring_glowfx", 7000, 1, "int" );
-	registerclientfield( "scriptmover", "ring_glow_meatfx", 7000, 1, "int" );
+	//registerclientfield( "allplayers", "holding_meat", 7000, 1, "int" );
+	//registerclientfield( "scriptmover", "ring_glowfx", 7000, 1, "int" );
+	//registerclientfield( "scriptmover", "ring_glow_meatfx", 7000, 1, "int" );
 	level.onprecachegametype = ::onprecachegametype;
 	level.onstartgametype = ::onstartgametype;
 	set_game_var( "ZM_roundLimit", 5 );
@@ -1208,7 +1208,7 @@ meat_player_setup()
 
 	self setmovespeedscale( 1 );
 	self._has_meat = 0;
-	self setclientfield( "holding_meat", 0 );
+	//self setclientfield( "holding_meat", 0 );
 	self freeze_player_controls( 1 );
 }
 
@@ -1613,7 +1613,7 @@ assign_meat_to_team( player, encounters_team )
 slow_down_player_with_meat()
 {
 	self endon( "disconnect" );
-	self setclientfield( "holding_meat", 1 );
+	//self setclientfield( "holding_meat", 1 );
 	self setmovespeedscale( 0.6 );
 	while ( isdefined( self._has_meat ) && self._has_meat )
 	{
@@ -1622,7 +1622,7 @@ slow_down_player_with_meat()
 	}
 
 	self setmovespeedscale( 1 );
-	self setclientfield( "holding_meat", 0 );
+	//self setclientfield( "holding_meat", 0 );
 }
 
 reset_meat_when_player_downed()

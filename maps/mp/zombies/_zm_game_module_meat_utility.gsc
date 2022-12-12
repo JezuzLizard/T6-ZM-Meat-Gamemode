@@ -95,7 +95,7 @@ init_minigun_ring()
 		level._minigun_icon = spawn( "script_model", level._minigun_ring_trig.origin );
 		level._minigun_icon setmodel( getweaponmodel( "minigun_zm" ) );
 		level._minigun_icon linkto( level._minigun_ring );
-		level._minigun_icon setclientfield( "ring_glowfx", 1 );
+		//level._minigun_icon setclientfield( "ring_glowfx", 1 );
 		level thread ring_toss( level._minigun_ring_trig, "minigun" );
 	}
 	// else
@@ -146,7 +146,7 @@ init_ammo_ring()
 		level._ammo_icon = spawn( "script_model", level._ammo_ring_trig.origin );
 		level._ammo_icon setmodel( "zombie_ammocan" );
 		level._ammo_icon linkto( level._ammo_ring );
-		level._ammo_icon setclientfield( "ring_glowfx", 1 );
+		//level._ammo_icon setclientfield( "ring_glowfx", 1 );
 		level thread ring_toss( level._ammo_ring_trig, "ammo" );
 	}
 	else
@@ -252,7 +252,7 @@ minigun_toss_cooldown()
 	level._minigun_icon = spawn( "script_model", level._minigun_ring_trig.origin );
 	level._minigun_icon setmodel( getweaponmodel( "minigun_zm" ) );
 	level._minigun_icon linkto( level._minigun_ring );
-	level._minigun_icon setclientfield( "ring_glowfx", 1 );
+	//level._minigun_icon setclientfield( "ring_glowfx", 1 );
 	level._minigun_toss_cooldown = 0;
 }
 
@@ -268,7 +268,7 @@ ammo_toss_cooldown()
 	level._ammo_icon = spawn( "script_model", level._ammo_ring_trig.origin );
 	level._ammo_icon setmodel( "zombie_ammocan" );
 	level._ammo_icon linkto( level._ammo_ring );
-	level._ammo_icon setclientfield( "ring_glowfx", 1 );
+	//level._ammo_icon setclientfield( "ring_glowfx", 1 );
 	level._ammo_toss_cooldown = 0;
 }
 

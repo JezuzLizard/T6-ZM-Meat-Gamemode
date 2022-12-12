@@ -141,10 +141,12 @@ setup_standard_objects_override( location )
 	{
 		if ( isdefined( struct.script_noteworthy ) && struct.script_noteworthy != location )
 			continue;
+		/*
 		if ( isDefined( struct.script_parameters ) && struct.script_parameters == "p6_zm_scoreboard_on" )
 		{
 			continue;
 		}
+		*/
 		if ( isdefined( struct.script_string ) )
 		{
 			keep = 0;

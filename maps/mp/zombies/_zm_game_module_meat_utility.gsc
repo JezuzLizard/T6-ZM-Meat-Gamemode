@@ -468,3 +468,23 @@ last_team_to_touch_the_meat()
 {
 
 }
+
+init_splitter_ring()
+{
+
+}
+
+wait_for_team_death( team )
+{
+
+}
+
+get_players_on_meat_team( team )
+{
+
+}
+
+get_alive_players_on_meat_team( team )
+{
+
+}

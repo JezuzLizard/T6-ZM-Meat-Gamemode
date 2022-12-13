@@ -7,12 +7,6 @@
 #include maps\mp\zombies\_zm_game_module_meat_utility;
 #include maps\mp\zombies\_zm_game_module_meat;
 
-init_item_meat()
-{
-	level.item_meat_name = "item_meat_zm";
-	precacheitem( level.item_meat_name );
-}
-
 move_ring( ring )
 {
 	positions = getstructarray( ring.target, "targetname" );

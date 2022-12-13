@@ -286,7 +286,7 @@ watch_save_player()
 
 	level._checking_for_save = 1;
 
-	while ( isdefined( level.splitting_meat ) && level.splitting_meat || isdefined( level.item_meat ) && ( isdefined( level.item_meat.meat_is_moving ) && level.item_meat.meat_is_moving || isdefined( level.item_meat.meat_is_flying ) && level.item_meat.meat_is_flying ) )
+	while ( isdefined( level.item_meat ) && ( isdefined( level.item_meat.meat_is_moving ) && level.item_meat.meat_is_moving || isdefined( level.item_meat.meat_is_flying ) && level.item_meat.meat_is_flying ) )
 	{
 		if ( level._meat_on_team != self._encounters_team )
 			break;

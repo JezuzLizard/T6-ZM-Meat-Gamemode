@@ -128,9 +128,6 @@ zmeat_town_main()
 	level.zombie_vars["zombie_intermission_time"] = 5;
 	level._supress_survived_screen = 1;
 	level thread maps\mp\gametypes_zm\zmeat::item_meat_clear();
-	starting_team = ( cointoss() ? "A" : "B" );
-	level.meat_starting_team = starting_team;
-	level thread meat_intro( level._meat_start_points[ starting_team ] );
 	spawn_player_barriers();
 }
 

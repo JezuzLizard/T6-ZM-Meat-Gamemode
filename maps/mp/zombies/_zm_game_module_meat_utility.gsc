@@ -419,3 +419,52 @@ drop_meat( drop_spot )
 	level notify( "reset_meat" );
 	meat delete();
 }
+
+watch_meat_in_bad_places()
+{
+	level endon( "end_game" );
+	while ( true )
+	{
+		wait 1;
+		level.meat_is_under_the_map = false;
+		if ( !isDefined( level.the_meat ) )
+		{
+			continue;
+		}
+		if ( level.the_meat.origin[ 2 ] < -100 )
+		{
+			level.meat_is_under_the_map = true;
+			level thread item_meat_reset( level._meat_start_points[ level.meat_starting_team ], true );
+			//apply_penalty_to_team();
+			print( "meat is under the map 1" );
+		}
+		/*
+		test_meat_is_under_map();
+		if ( is_true( level.meat_is_under_the_map ) )
+		{
+			print( "meat is under the map 2" );
+		}
+		*/
+	}
+}
+
+test_meat_is_under_map()
+{
+	level.meat_is_under_the_map = false;
+	test_model = spawn( "script_model", level.the_meat.origin + ( 0, 0, 50 ) );
+	test_model setmodel( "zombie_ammocan" );
+	test_model hide();
+	test_model physicslaunch( ( 0, 0, 1 ), vectorscale( ( 1, 1, 1 ), 5.0 ) );
+	test_model waittill( "stationary" );
+	test_model_origin = test_model.origin;
+	test_model delete();
+	if ( isDefined( level.the_meat ) && level.the_meat.origin[ 2 ] < test_model_origin[ 2 ] )
+	{
+		level.meat_is_under_the_map = true;
+	}
+}
+
+last_team_to_touch_the_meat()
+{
+
+}

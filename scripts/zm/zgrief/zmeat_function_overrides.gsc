@@ -348,7 +348,7 @@ menuautoassign_override( comingfrommenu )
 
 	if ( !isdefined( game["spawns_randomized"] ) )
 	{
-		game["spawns_randomized"] = 1;
+		game["spawns_randomized"] = true;
 		random_chance = randomint( 100 );
 
 		if ( random_chance > 50 )

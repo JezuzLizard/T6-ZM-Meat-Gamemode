@@ -62,6 +62,7 @@ zmeat_town_struct_init()
 {
 	level.struct_class_names[ "script_noteworthy" ][ "initial_spawn" ] = [];
 	level.struct_class_names[ "targetname" ][ "player_respawn_point" ] = [];
+	level.struct_class_names[ "targetname" ][ "zm_perk_machine" ] = [];
 	coordinates_team1 = array( ( 1098.57, -172.707, -48.5673 ), ( 1225.5, -448.194, -61.875 ), ( 1332.15, -611.788, -61.1024 ), ( 1544.77, -725.784, -54.5458 ) );
 	angles_team1 = array( ( 0, 30.6696, 0 ), ( 0, 31.1914, 0 ), ( 0, 41.1835, 0 ), ( 0, 98.2959, 0 ) );
 	for ( i = 0; i < coordinates_team1.size; i++ )
@@ -144,12 +145,11 @@ setup_standard_objects_override( location )
 	{
 		if ( isdefined( struct.script_noteworthy ) && struct.script_noteworthy != location )
 			continue;
-		/*
+
 		if ( isDefined( struct.script_parameters ) && struct.script_parameters == "p6_zm_scoreboard_on" )
 		{
 			continue;
 		}
-		*/
 		if ( isdefined( struct.script_string ) )
 		{
 			keep = 0;

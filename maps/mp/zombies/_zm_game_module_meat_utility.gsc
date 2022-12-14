@@ -331,14 +331,21 @@ get_game_module_players( player )
 
 item_meat_spawn( origin )
 {
+	print( "item_meat_spawn() origin: " + origin );
+	level endon( "end_game" );
 	org = origin;
 	player = getPlayers()[0];
+	if ( !isDefined( player ) )
+	{
+		return;
+	}
 	player._spawning_meat = 1;
 	level.the_meat = player magicgrenadetype( get_gamemode_var( "item_meat_name" ), org, ( 0, 0, 0 ) );
 	playsoundatposition( "zmb_spawn_powerup", org );
 	level.the_meat._marker = playfxontag( level._effect["meat_marker"], level.the_meat, "tag_origin" );
 	wait 0.1;
 	player._spawning_meat = undefined;
+	level.meat_is_under_the_map = false;
 }
 
 init_item_meat( gametype )
@@ -418,34 +425,6 @@ drop_meat( drop_spot )
 	playfx( level._effect["fw_impact"], drop_spot );
 	level notify( "reset_meat" );
 	meat delete();
-}
-
-watch_meat_in_bad_places()
-{
-	level endon( "end_game" );
-	while ( true )
-	{
-		wait 1;
-		level.meat_is_under_the_map = false;
-		if ( !isDefined( level.the_meat ) )
-		{
-			continue;
-		}
-		if ( level.the_meat.origin[ 2 ] < -100 )
-		{
-			level.meat_is_under_the_map = true;
-			level thread item_meat_reset( level._meat_start_points[ level.meat_starting_team ], true );
-			//apply_penalty_to_team();
-			print( "meat is under the map 1" );
-		}
-		/*
-		test_meat_is_under_map();
-		if ( is_true( level.meat_is_under_the_map ) )
-		{
-			print( "meat is under the map 2" );
-		}
-		*/
-	}
 }
 
 test_meat_is_under_map()

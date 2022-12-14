@@ -99,8 +99,7 @@ meat_hub_start_func()
 	level thread init_ammo_ring();
 	level thread hide_non_meat_objects();
 	level thread setup_meat_world_objects();
-	level thread watch_meat_in_bad_places();
-	level thread watch_meat_polygon();
+	level thread watch_meat_in_map();
 	level._zombie_path_timer_override = ::zombie_path_timer_override;
 	level.zombie_health = level.zombie_vars["zombie_health_start"];
 	level._zombie_spawning = 0;
@@ -568,6 +567,7 @@ is_meat( weapon )
 
 spike_the_meat( meat )
 {
+	self endon( "disconnect" );
 	if ( isdefined( self._kicking_meat ) && self._kicking_meat )
 		return;
 
@@ -1830,17 +1830,53 @@ create_meat_bounds_polygon()
 	connect_point_on_polygon( ( 1371.13, -854.452, -61.1272 ), ( 1086.71, -738.547, -55.875 ) );
 }
 
-watch_meat_polygon()
+watch_meat_in_map()
 {
 	create_meat_bounds_polygon();
+	level.meat_polygon_bounce_factor = 10;
+	level.meat_is_under_the_map = false;
 	level endon( "end_game" );
 	while ( true )
 	{
-		wait 1;
+		wait 0.05;
+		waittillframeend;
 		if ( !isDefined( level.the_meat ) )
 		{
 			continue;
 		}
-		check_point_is_in_polygon( level.meat_bounds, level.the_meat.origin );
+		if ( getPlayers().size <= 0 )
+		{
+			continue;
+		}
+		//meat_trace = playerPhysicsTrace( level.meat_under_the_map_limit, level.the_meat.origin + ( 0, 0, -2000 ) );
+		//print( "meat_trace: " + meat_trace );
+		//if ( meat_trace[ 2 ] < level.meat_under_the_map_limit[ 2 ] )
+		if ( level.the_meat.origin[ 2 ] < level.meat_under_the_map_limit[ 2 ] )
+		{
+			level.meat_is_under_the_map = true;
+			level thread item_meat_reset( level._meat_start_points[ level.meat_starting_team ], true );
+			//apply_penalty_to_team();
+			print( "meat is under the map 1" );
+			continue;
+		}
+		if ( isDefined( level.the_meat ) && !check_point_is_in_polygon( level.meat_bounds, level.the_meat.origin ) && !level.meat_is_under_the_map )
+		{
+			//cur_velocity = level.the_meat getVelocity();
+			//new_velocity = ( cur_velocity * -1 ) * 0.2;
+			target_pos = level._meat_location_center;
+			start_pos = level.the_meat.origin;
+			power = 1000;
+			gravity = getdvarint( "bg_gravity" ) * -1;
+			dist = distance( start_pos, target_pos );
+			time = dist / power;
+			delta = target_pos - start_pos;
+			drop = 0.5 * gravity * ( time * time );
+			velocity = ( ( delta[0] / time ) / level.meat_polygon_bounce_factor, ( delta[1] / time ) / level.meat_polygon_bounce_factor, ( delta[2] - drop ) / time );
+			cur_origin = level.the_meat.origin;
+			print( "velocity: " + velocity );
+			level.the_meat cleanup_meat();
+			level.the_meat = getPlayers()[ 0 ] magicgrenadetype( get_gamemode_var( "item_meat_name" ), cur_origin, velocity );
+			level.the_meat waittill_any_timeout( time, "stationary", "death" );
+		}
 	}
 }

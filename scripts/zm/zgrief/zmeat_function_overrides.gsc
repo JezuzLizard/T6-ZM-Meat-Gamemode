@@ -16,6 +16,7 @@ main()
 	replaceFunc( maps\mp\zombies\_zm_spawner::play_ambient_zombie_vocals, ::play_ambient_zombie_vocals_override );
 	replaceFunc( maps\mp\zombies\_zm::getFreeSpawnpoint, ::getFreeSpawnpoint_override );
 	replaceFunc( maps\mp\gametypes_zm\_globallogic_ui::setupcallbacks, ::setupcallbacks_override );
+	replaceFunc( maps\mp\zombies\_zm_perks::perk_machine_spawn_init, ::perk_machine_spawn_init_override );
 	level._game_module_player_laststand_callback = ::meat_last_stand_callback;
 	level thread on_player_connect();
 }
@@ -390,4 +391,9 @@ menuautoassign_override( comingfrommenu )
 	self notify( "end_respawn" );
 	self beginclasschoice();
 	self setclientscriptmainmenu( game["menu_class"] );
+}
+
+perk_machine_spawn_init_override()
+{
+	return;
 }

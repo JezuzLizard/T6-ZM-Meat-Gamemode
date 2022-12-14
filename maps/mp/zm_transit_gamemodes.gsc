@@ -62,7 +62,6 @@ zmeat_town_struct_init()
 {
 	level.struct_class_names[ "script_noteworthy" ][ "initial_spawn" ] = [];
 	level.struct_class_names[ "targetname" ][ "player_respawn_point" ] = [];
-	level.struct_class_names[ "targetname" ][ "zm_perk_machine" ] = [];
 	coordinates_team1 = array( ( 1098.57, -172.707, -48.5673 ), ( 1225.5, -448.194, -61.875 ), ( 1332.15, -611.788, -61.1024 ), ( 1544.77, -725.784, -54.5458 ) );
 	angles_team1 = array( ( 0, 30.6696, 0 ), ( 0, 31.1914, 0 ), ( 0, 41.1835, 0 ), ( 0, 98.2959, 0 ) );
 	for ( i = 0; i < coordinates_team1.size; i++ )
@@ -124,7 +123,10 @@ zmeat_town_main()
 	register_zmeat_riser_location( ( 856.151, -649.651, -55.875 ), "B" );
 	register_zmeat_riser_location( ( 1618.35, -1215.13, -61.875 ), "B" );
 	register_zmeat_riser_location( ( 1327.61, -1128, -61.875 ), "B" );
-	
+
+	level._meat_location_center = ( 1425.77, -377.987, -67.875 );
+	level.meat_under_the_map_limit = ( 0, 0, -80 );
+
 	flag_clear("zombie_drop_powerups");
 	level.custom_intermission  = ::town_meat_intermission;
 	level.zombie_vars["zombie_intermission_time"] = 5;

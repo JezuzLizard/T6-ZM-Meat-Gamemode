@@ -170,7 +170,13 @@ check_point_is_in_polygon( polygon, point )
 {
 	// Function call
 	if ( checkInside( polygon, polygon.size, point ) )
-		print( "Point is inside." );
+	{
+		//print( "Point is inside." );
+		return true;
+	}
 	else
-		print( "Point is outside." );
+	{
+		//print( "Point is outside." );
+		return false;
+	}
 }

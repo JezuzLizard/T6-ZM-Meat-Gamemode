@@ -124,6 +124,7 @@ zmeat_town_main()
 	register_zmeat_riser_location( ( 856.151, -649.651, -55.875 ), "B" );
 	register_zmeat_riser_location( ( 1618.35, -1215.13, -61.875 ), "B" );
 	register_zmeat_riser_location( ( 1327.61, -1128, -61.875 ), "B" );
+	
 	flag_clear("zombie_drop_powerups");
 	level.custom_intermission  = ::town_meat_intermission;
 	level.zombie_vars["zombie_intermission_time"] = 5;

@@ -4,6 +4,7 @@
 #include maps\mp\gametypes_zm\_hud_util;
 #include common_scripts\utility;
 #include maps\mp\zombies\_zm_game_module_meat_utility;
+#include maps\mp\zombies\_zm_game_module_utility;
 #include maps\mp\gametypes_zm\_zm_gametype;
 #include maps\mp\zombies\_zm;
 #include maps\mp\zombies\_zm_game_module;
@@ -99,6 +100,7 @@ meat_hub_start_func()
 	level thread hide_non_meat_objects();
 	level thread setup_meat_world_objects();
 	level thread watch_meat_in_bad_places();
+	level thread watch_meat_polygon();
 	level._zombie_path_timer_override = ::zombie_path_timer_override;
 	level.zombie_health = level.zombie_vars["zombie_health_start"];
 	level._zombie_spawning = 0;
@@ -1078,7 +1080,7 @@ can_touch_meat()
 {
 	if ( is_true( self.dont_touch_the_meat ) )
 	{
-		print( "player can't touch the meat because self.dont_touch_the_meat is true" );
+		//print( "player can't touch the meat because self.dont_touch_the_meat is true" );
 		return false;
 	}
 	/*
@@ -1141,11 +1143,11 @@ item_quick_trigger( trigger )
 
 		if ( players.size )
 		{
-			random_start_point = randomint( players.size );
+			players = array_randomize( players );
 
 			for ( i = 0; i < players.size; i++ )
 			{
-				player = players[ ( i + random_start_point ) % players.size ];
+				player = players[ i ];
 
 				if ( !isdefined( trigger ) )
 				{
@@ -1154,41 +1156,41 @@ item_quick_trigger( trigger )
 
 				if ( player maps\mp\zombies\_zm_laststand::is_reviving_any() )
 				{
-					print( "player is reviving" );
+					//print( "player is reviving" );
 					player reset_trying_to_trigger_meat();
 					continue;
 				}
 				if ( !is_player_valid( player ) )
 				{
-					print( "player is not valid" );
+					//print( "player is not valid" );
 					player reset_trying_to_trigger_meat();
 					continue;
 				}
 
 				if ( player has_powerup_weapon() )
 				{
-					print( "player has powerup weapon" );
+					//print( "player has powerup weapon" );
 					player reset_trying_to_trigger_meat();
 					continue;
 				}
 					
 				if ( !player istouching( trigger ) )
 				{
-					print( "player is not touching the trigger" );
+					//print( "player is not touching the trigger" );
 					player reset_trying_to_trigger_meat();
 					continue;
 				}
 
 				if ( distance2dsquared( player.origin, trigorg ) > trigrad2 )
 				{
-					print( "player is not close enough to the trigger" );
+					//print( "player is not close enough to the trigger" );
 					player reset_trying_to_trigger_meat();
 					continue;
 				}
 
 				if ( !player can_touch_meat() )
 				{
-					print( "player can not touch the meat" );
+					//print( "player can not touch the meat" );
 					player reset_trying_to_trigger_meat();
 					continue;
 				}
@@ -1200,12 +1202,12 @@ item_quick_trigger( trigger )
 				{
 					if ( !player ismeleeing() )
 					{
-						print( "player is not meleeing" );
+						//print( "player is not meleeing" );
 						continue;
 					}
 					if ( !player can_spike_meat() )
 					{
-						print( "player can not spike the meat" );
+						//print( "player can not spike the meat" );
 						continue;
 					}
 					player.trying_to_trigger_meat = false;
@@ -1214,13 +1216,13 @@ item_quick_trigger( trigger )
 				}
 				else 
 				{
-					print( "player is not trying to use or the meat is not flying and the player is not meleeing" );
+					//print( "player is not trying to use or the meat is not flying and the player is not meleeing" );
 					player reset_trying_to_trigger_meat();
 					continue;
 				}
 				if ( !is_true( player.trying_to_trigger_meat ) )
 				{
-					print( "player is not trying to trigger meat" );
+					//print( "player is not trying to trigger meat" );
 					player.trying_to_trigger_meat = true;
 					player.trying_to_trigger_meat_time = gettime();
 				}
@@ -1231,7 +1233,7 @@ item_quick_trigger( trigger )
 				}
 				else 
 				{
-					print( "player trying to trigger meat time is less than meat_trigger_time" );
+					//print( "player trying to trigger meat time is less than meat_trigger_time" );
 				}
 			}
 		}
@@ -1778,4 +1780,67 @@ handle_super_sprint_mantle()
 always_false()
 {
 	return false;
+}
+
+create_meat_bounds_polygon()
+{
+	add_point_to_meat_bounds( ( 1173.28, -843.642, -55.875 ) );
+	add_point_to_meat_bounds( ( 1086.71, -738.547, -55.875 ) );
+	connect_point_on_polygon( ( 1173.28, -843.642, -55.875 ), ( 1086.71, -738.547, -55.875 ) );
+
+	add_point_to_meat_bounds( ( 1073.83, -369.226, -61.875 ) );
+	connect_point_on_polygon( ( 1086.71, -738.547, -55.875 ), ( 1073.83, -369.226, -61.875 ) );
+
+	add_point_to_meat_bounds( ( 968.069, -136.957, -48.121 ) );
+	connect_point_on_polygon( ( 1073.83, -369.226, -61.875 ), ( 968.069, -136.957, -48.121 ) );
+
+	add_point_to_meat_bounds( ( 1130.38, 21.0768, -40.4399 ) );
+	connect_point_on_polygon( ( 968.069, -136.957, -48.121 ), ( 1130.38, 21.0768, -40.4399 ) );
+
+	add_point_to_meat_bounds( ( 1131.93, 248.836, -39.875 ) );
+	connect_point_on_polygon( ( 1130.38, 21.0768, -40.4399 ), ( 1131.93, 248.836, -39.875 ) );
+
+	add_point_to_meat_bounds( ( 1395.27, 329.722, -61.875 ) );
+	connect_point_on_polygon( ( 1131.93, 248.836, -39.875 ), ( 1395.27, 329.722, -61.875 ) );
+
+	add_point_to_meat_bounds( ( 1746.36, 262.378, -55.875 ) );
+	connect_point_on_polygon( ( 1395.27, 329.722, -61.875 ), ( 1746.36, 262.378, -55.875 ) );
+
+	add_point_to_meat_bounds( ( 1728.88, -327.603, -61.875 ) );
+	connect_point_on_polygon( ( 1746.36, 262.378, -55.875 ), ( 1728.88, -327.603, -61.875 ) );
+
+	add_point_to_meat_bounds( ( 1696.27, -404.117, -60.0451 ) );
+	connect_point_on_polygon( ( 1728.88, -327.603, -61.875 ), ( 1696.27, -404.117, -60.0451 ) );
+
+	add_point_to_meat_bounds( ( 1693.15, -560.723, -49.4247 ) );
+	connect_point_on_polygon( ( 1696.27, -404.117, -60.0451 ), ( 1693.15, -560.723, -49.4247 ) );
+
+	add_point_to_meat_bounds( ( 1622.8, -723.422, -54.3495 ) );
+	connect_point_on_polygon( ( 1693.15, -560.723, -49.4247 ), ( 1622.8, -723.422, -54.3495 ) );
+
+	add_point_to_meat_bounds( ( 1638.99, -1004.68, -61.875 ) );
+	connect_point_on_polygon( ( 1622.8, -723.422, -54.3495 ), ( 1638.99, -1004.68, -61.875 ) );
+
+	add_point_to_meat_bounds( ( 1504.55, -985.215, -52.3769 ) );
+	connect_point_on_polygon( ( 1638.99, -1004.68, -61.875 ), ( 1504.55, -985.215, -52.3769 ) );
+
+	add_point_to_meat_bounds( ( 1371.13, -854.452, -61.1272 ) );
+	connect_point_on_polygon( ( 1504.55, -985.215, -52.3769 ), ( 1371.13, -854.452, -61.1272 ) );
+
+	connect_point_on_polygon( ( 1371.13, -854.452, -61.1272 ), ( 1086.71, -738.547, -55.875 ) );
+}
+
+watch_meat_polygon()
+{
+	create_meat_bounds_polygon();
+	level endon( "end_game" );
+	while ( true )
+	{
+		wait 1;
+		if ( !isDefined( level.the_meat ) )
+		{
+			continue;
+		}
+		check_point_is_in_polygon( level.meat_bounds, level.the_meat.origin );
+	}
 }

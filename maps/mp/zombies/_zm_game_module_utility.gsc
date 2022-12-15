@@ -303,13 +303,26 @@ connect_point_on_polygon( point_a, point_b )
 	level._polygon_lines[ level._polygon_lines.size - 1 ][ 1 ] = point_b;
 }
 
-add_point_to_meat_bounds( point )
+add_point_to_meat_playable_bounds( point )
 {
-	if ( !isDefined( level.meat_bounds ) )
+	if ( !isDefined( level.meat_playable_bounds ) )
 	{
-		level.meat_bounds = [];
+		level.meat_playable_bounds = [];
 	}
-	level.meat_bounds[ level.meat_bounds.size ] = point;
+	level.meat_playable_bounds[ level.meat_playable_bounds.size ] = point;
+}
+
+add_point_to_meat_team_bounds( team, point )
+{
+	if ( !isDefined( level.meat_team_bounds ) )
+	{
+		level.meat_team_bounds = [];
+	}
+	if ( !isDefined( level.meat_team_bounds[ team ] ) )
+	{
+		level.meat_team_bounds[ team ] = [];
+	}
+	level.meat_team_bounds[ team ][ level.meat_team_bounds.size ] = point;
 }
 
 on_line( line, point )

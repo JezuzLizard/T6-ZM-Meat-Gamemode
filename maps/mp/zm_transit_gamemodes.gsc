@@ -127,6 +127,10 @@ zmeat_town_main()
 	level._meat_location_center = ( 1425.77, -377.987, -67.875 );
 	level.meat_under_the_map_limit = ( 0, 0, -80 );
 
+	create_meat_playable_bounds_polygon();
+	create_meat_team_a_bounds();
+	create_meat_team_b_bounds();
+
 	flag_clear("zombie_drop_powerups");
 	level.custom_intermission  = ::town_meat_intermission;
 	level.zombie_vars["zombie_intermission_time"] = 5;
@@ -241,4 +245,78 @@ register_zmeat_riser_location( origin, side )
 	struct.angles = ( 0, 0, 0 );
 	struct.script_noteworthy = "riser_location";
 	level._zmeat_zombie_spawn_locations[ side ][ level._zmeat_zombie_spawn_locations[ side ].size ] = struct;
+}
+
+create_meat_playable_bounds_polygon()
+{
+	add_point_to_meat_playable_bounds( ( 1173.28, -843.642, -55.875 ) );
+	add_point_to_meat_playable_bounds( ( 1086.71, -738.547, -55.875 ) );
+	connect_point_on_polygon( ( 1173.28, -843.642, -55.875 ), ( 1086.71, -738.547, -55.875 ) );
+
+	add_point_to_meat_playable_bounds( ( 1073.83, -369.226, -61.875 ) );
+	connect_point_on_polygon( ( 1086.71, -738.547, -55.875 ), ( 1073.83, -369.226, -61.875 ) );
+
+	add_point_to_meat_playable_bounds( ( 968.069, -136.957, -48.121 ) );
+	connect_point_on_polygon( ( 1073.83, -369.226, -61.875 ), ( 968.069, -136.957, -48.121 ) );
+
+	add_point_to_meat_playable_bounds( ( 1130.38, 21.0768, -40.4399 ) );
+	connect_point_on_polygon( ( 968.069, -136.957, -48.121 ), ( 1130.38, 21.0768, -40.4399 ) );
+
+	add_point_to_meat_playable_bounds( ( 1131.93, 248.836, -39.875 ) );
+	connect_point_on_polygon( ( 1130.38, 21.0768, -40.4399 ), ( 1131.93, 248.836, -39.875 ) );
+
+	add_point_to_meat_playable_bounds( ( 1395.27, 329.722, -61.875 ) );
+	connect_point_on_polygon( ( 1131.93, 248.836, -39.875 ), ( 1395.27, 329.722, -61.875 ) );
+
+	add_point_to_meat_playable_bounds( ( 1746.36, 262.378, -55.875 ) );
+	connect_point_on_polygon( ( 1395.27, 329.722, -61.875 ), ( 1746.36, 262.378, -55.875 ) );
+
+	add_point_to_meat_playable_bounds( ( 1728.88, -327.603, -61.875 ) );
+	connect_point_on_polygon( ( 1746.36, 262.378, -55.875 ), ( 1728.88, -327.603, -61.875 ) );
+
+	add_point_to_meat_playable_bounds( ( 1696.27, -404.117, -60.0451 ) );
+	connect_point_on_polygon( ( 1728.88, -327.603, -61.875 ), ( 1696.27, -404.117, -60.0451 ) );
+
+	add_point_to_meat_playable_bounds( ( 1693.15, -560.723, -49.4247 ) );
+	connect_point_on_polygon( ( 1696.27, -404.117, -60.0451 ), ( 1693.15, -560.723, -49.4247 ) );
+
+	add_point_to_meat_playable_bounds( ( 1622.8, -723.422, -54.3495 ) );
+	connect_point_on_polygon( ( 1693.15, -560.723, -49.4247 ), ( 1622.8, -723.422, -54.3495 ) );
+
+	add_point_to_meat_playable_bounds( ( 1638.99, -1004.68, -61.875 ) );
+	connect_point_on_polygon( ( 1622.8, -723.422, -54.3495 ), ( 1638.99, -1004.68, -61.875 ) );
+
+	add_point_to_meat_playable_bounds( ( 1504.55, -985.215, -52.3769 ) );
+	connect_point_on_polygon( ( 1638.99, -1004.68, -61.875 ), ( 1504.55, -985.215, -52.3769 ) );
+
+	add_point_to_meat_playable_bounds( ( 1371.13, -854.452, -61.1272 ) );
+	connect_point_on_polygon( ( 1504.55, -985.215, -52.3769 ), ( 1371.13, -854.452, -61.1272 ) );
+
+	connect_point_on_polygon( ( 1371.13, -854.452, -61.1272 ), ( 1086.71, -738.547, -55.875 ) );
+}
+
+create_meat_team_b_bounds()
+{
+	add_point_to_meat_team_bounds( "B", ( 1173.28, -843.642, -55.875 ) );
+	add_point_to_meat_team_bounds( "B", ( 1086.71, -738.547, -55.875 ) );
+	add_point_to_meat_team_bounds( "B", ( 1073.83, -369.226, -61.875 ) );
+	add_point_to_meat_team_bounds( "B", ( 968.069, -136.957, -48.121 ) );
+	add_point_to_meat_team_bounds( "B", ( 1119.21, 6.4052, -40.8399 ) );
+	add_point_to_meat_team_bounds( "B", ( 1754.84, -826.26, -43.7537 ) );
+	add_point_to_meat_team_bounds( "B", ( 1759.86, -975.278, -32.7789 ) );
+	add_point_to_meat_team_bounds( "B", ( 1493.68, -978.587, -55.3623 ) );
+	add_point_to_meat_team_bounds( "B", ( 1354.83, -851.359, -61.2965 ) );
+}
+
+create_meat_team_a_bounds()
+{
+	add_point_to_meat_team_bounds( "A", ( 1134.04, 23.3812, -40.5558 ) );
+	add_point_to_meat_team_bounds( "A", ( 1533.33, -518.199, -67.875 ) );
+	add_point_to_meat_team_bounds( "A", ( 1623.62, -522.479, -53.1751 ) );
+	add_point_to_meat_team_bounds( "A", ( 1694.36, -564.124, -49.2267 ) );
+	add_point_to_meat_team_bounds( "A", ( 1699.95, -394.593, -60.5192 ) );
+	add_point_to_meat_team_bounds( "A", ( 1766.36, 238.359, -55.875 ) );
+	add_point_to_meat_team_bounds( "A", ( 1672.05, 279.028, -55.875 ) );
+	add_point_to_meat_team_bounds( "A", ( 1388.67, 338.737, -61.875 ) );
+	add_point_to_meat_team_bounds( "A", ( 1131.64, 247.65, -39.875 ) );
 }

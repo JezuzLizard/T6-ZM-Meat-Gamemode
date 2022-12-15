@@ -199,6 +199,7 @@ monitor_meat_on_side()
 		wait 0.05;		
 		if ( isdefined( level.item_meat ) )
 		{
+			/*
 			if ( is_true( level.meat_touched_middle_volume ) )
 			{
 				level.meat_touched_middle_volume = false;
@@ -215,6 +216,7 @@ monitor_meat_on_side()
 					level.meat_lost_time = undefined;
 				}
 			}
+			*/
 			/*
 			else if ( isdefined( last_team ) )
 			{
@@ -1359,42 +1361,6 @@ meat_poi_override_func()
 	return undefined;
 }
 
-meat_end_match( winning_team )
-{
-	players = getPlayers();
-
-	for ( i = 0; i < players.size; i++ )
-	{
-		if ( isdefined( players[i].has_minigun ) && players[i].has_minigun )
-		{
-			primaryweapons = players[i] getweaponslistprimaries();
-
-			for ( x = 0; x < primaryweapons.size; x++ )
-			{
-				if ( primaryweapons[x] == "minigun_zm" )
-					players[i] takeweapon( "minigun_zm" );
-			}
-
-			players[i] notify( "minigun_time_over" );
-			players[i].zombie_vars["zombie_powerup_minigun_on"] = false;
-			players[i]._show_solo_hud = false;
-			players[i].has_minigun = false;
-			players[i].has_powerup_weapon = false;
-		}
-
-		if ( players[i] hasweapon( get_gamemode_var( "item_meat_name" ) ) )
-		{
-			players[i] takeweapon( get_gamemode_var( "item_meat_name" ) );
-			players[i] decrement_is_drinking();
-		}
-	}
-
-	level notify( "game_module_ended", winning_team );
-	wait 0.1;
-	level delay_thread( 2, ::item_meat_clear );
-
-}
-
 updatedownedcounters()
 {
 	if ( self._encounters_team == "A" )
@@ -1411,6 +1377,8 @@ updatedownedcounters()
 
 waitforrevive( team )
 {
+	level endon( "end_game" );
+	self endon( "disconnect" );
 	self endon( "bled_out" );
 
 	self waittill( "player_revived" );
@@ -1637,7 +1605,17 @@ switch_team_has_meat_on_trigger()
 	{
 		if ( isDefined( level.the_meat ) && level.the_meat isTouching( self ) )
 		{
-			level.meat_touched_middle_volume = true;
+			if ( isDefined( level._meat_on_team ) )
+			{
+				if ( level._meat_on_team == "A" )
+				{
+					level._meat_on_team = "B";
+				}
+				else 
+				{
+					level._meat_on_team = "A";
+				}
+			}
 		}
 		wait 0.05;
 	}
@@ -1910,57 +1888,8 @@ always_false()
 	return false;
 }
 
-create_meat_bounds_polygon()
-{
-	add_point_to_meat_bounds( ( 1173.28, -843.642, -55.875 ) );
-	add_point_to_meat_bounds( ( 1086.71, -738.547, -55.875 ) );
-	connect_point_on_polygon( ( 1173.28, -843.642, -55.875 ), ( 1086.71, -738.547, -55.875 ) );
-
-	add_point_to_meat_bounds( ( 1073.83, -369.226, -61.875 ) );
-	connect_point_on_polygon( ( 1086.71, -738.547, -55.875 ), ( 1073.83, -369.226, -61.875 ) );
-
-	add_point_to_meat_bounds( ( 968.069, -136.957, -48.121 ) );
-	connect_point_on_polygon( ( 1073.83, -369.226, -61.875 ), ( 968.069, -136.957, -48.121 ) );
-
-	add_point_to_meat_bounds( ( 1130.38, 21.0768, -40.4399 ) );
-	connect_point_on_polygon( ( 968.069, -136.957, -48.121 ), ( 1130.38, 21.0768, -40.4399 ) );
-
-	add_point_to_meat_bounds( ( 1131.93, 248.836, -39.875 ) );
-	connect_point_on_polygon( ( 1130.38, 21.0768, -40.4399 ), ( 1131.93, 248.836, -39.875 ) );
-
-	add_point_to_meat_bounds( ( 1395.27, 329.722, -61.875 ) );
-	connect_point_on_polygon( ( 1131.93, 248.836, -39.875 ), ( 1395.27, 329.722, -61.875 ) );
-
-	add_point_to_meat_bounds( ( 1746.36, 262.378, -55.875 ) );
-	connect_point_on_polygon( ( 1395.27, 329.722, -61.875 ), ( 1746.36, 262.378, -55.875 ) );
-
-	add_point_to_meat_bounds( ( 1728.88, -327.603, -61.875 ) );
-	connect_point_on_polygon( ( 1746.36, 262.378, -55.875 ), ( 1728.88, -327.603, -61.875 ) );
-
-	add_point_to_meat_bounds( ( 1696.27, -404.117, -60.0451 ) );
-	connect_point_on_polygon( ( 1728.88, -327.603, -61.875 ), ( 1696.27, -404.117, -60.0451 ) );
-
-	add_point_to_meat_bounds( ( 1693.15, -560.723, -49.4247 ) );
-	connect_point_on_polygon( ( 1696.27, -404.117, -60.0451 ), ( 1693.15, -560.723, -49.4247 ) );
-
-	add_point_to_meat_bounds( ( 1622.8, -723.422, -54.3495 ) );
-	connect_point_on_polygon( ( 1693.15, -560.723, -49.4247 ), ( 1622.8, -723.422, -54.3495 ) );
-
-	add_point_to_meat_bounds( ( 1638.99, -1004.68, -61.875 ) );
-	connect_point_on_polygon( ( 1622.8, -723.422, -54.3495 ), ( 1638.99, -1004.68, -61.875 ) );
-
-	add_point_to_meat_bounds( ( 1504.55, -985.215, -52.3769 ) );
-	connect_point_on_polygon( ( 1638.99, -1004.68, -61.875 ), ( 1504.55, -985.215, -52.3769 ) );
-
-	add_point_to_meat_bounds( ( 1371.13, -854.452, -61.1272 ) );
-	connect_point_on_polygon( ( 1504.55, -985.215, -52.3769 ), ( 1371.13, -854.452, -61.1272 ) );
-
-	connect_point_on_polygon( ( 1371.13, -854.452, -61.1272 ), ( 1086.71, -738.547, -55.875 ) );
-}
-
 watch_meat_in_map()
 {
-	create_meat_bounds_polygon();
 	level.meat_polygon_bounce_factor = 10;
 	level.meat_is_under_the_map = false;
 	level endon( "end_game" );
@@ -1987,7 +1916,7 @@ watch_meat_in_map()
 			//apply_penalty_to_team();
 			continue;
 		}
-		if ( isDefined( level.the_meat ) && !check_point_is_in_polygon( level.meat_bounds, level.the_meat.origin ) && !level.meat_is_under_the_map )
+		if ( isDefined( level.the_meat ) && !check_point_is_in_polygon( level.meat_playable_bounds, level.the_meat.origin ) && !level.meat_is_under_the_map )
 		{
 			//cur_velocity = level.the_meat getVelocity();
 			//new_velocity = ( cur_velocity * -1 ) * 0.2;

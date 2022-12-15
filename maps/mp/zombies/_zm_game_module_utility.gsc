@@ -7,14 +7,267 @@
 #include maps\mp\zombies\_zm_game_module_meat_utility;
 #include maps\mp\zombies\_zm_game_module_meat;
 
+hud_init()
+{
+	hudelem_server_add( "meat_score_A", ::meat_score_axis );
+	hudelem_server_add( "meat_score_B", ::meat_score_allies );
+	hudelem_server_add( "meat_score_A_icon", ::meat_score_axis_icon );
+	hudelem_server_add( "meat_score_B_icon", ::meat_score_allies_icon );
+	//hudelem_server_add( "meat_countdown_timer", ::meat_countdown );
+	set_server_hud_alpha( getDvarIntDefault( "hud_scoreboard", 1 ) );
+}
+
+hudelem_server_add( name, hudelem_constructor )
+{
+	if ( !isDefined( level.server_hudelem_funcs ) )
+	{
+		level.server_hudelem_funcs = [];
+	}
+	if ( !isDefined( level.server_hudelems ) )
+	{
+		level.server_hudelems = [];
+	}
+	level.server_hudelem_funcs[ name ] = hudelem_constructor;
+	level.server_hudelems[ name ] = [[ hudelem_constructor ]]();
+}
+
+set_server_hud_alpha( alpha )
+{
+	level.server_hudelems[ "meat_score_A" ].alpha = alpha;
+	level.server_hudelems[ "meat_score_B" ].alpha = alpha;
+	level.server_hudelems[ "meat_score_A_icon" ].alpha = alpha;
+	level.server_hudelems[ "meat_score_B_icon" ].alpha = alpha;
+}
+
+meat_score_allies()
+{
+	meat_score_hud = newhudelem();
+	meat_score_hud.x += 240;
+	meat_score_hud.y += 20;
+	meat_score_hud.fontscale = 2.5;
+	meat_score_hud.color = ( 0.423, 0.004, 0 );
+	meat_score_hud.alpha = 1;
+	meat_score_hud.hidewheninmenu = 1;
+	meat_score_hud setValue( 0 );
+	return meat_score_hud;
+}
+
+meat_score_allies_icon()
+{
+	mapname = getDvar( "mapname" );
+	color = undefined;
+	if ( mapname == "zm_prison" )
+	{
+		icon = "faction_guards";
+	}
+	else if ( mapname == "zm_highrise" )
+	{
+		icon = "faction_highrise";
+	}
+	else if ( mapname == "zm_tomb" )
+	{
+		icon = "faction_tomb";
+	}
+	else 
+	{
+		icon = "faction_cdc";
+	}
+	team_shader2 = createservericon( icon, 35, 35 );
+	team_shader2.x += -110;
+	team_shader2.y += -20;
+	team_shader2.hideWhenInMenu = 1;
+	team_shader2.alpha = 1;
+	if ( isDefined( color ) )
+	{
+		team_shader2.color = color;
+	}
+	return team_shader2;
+}
+
+meat_score_axis()
+{
+	meat_score_hud = newhudelem();
+	meat_score_hud.x += 440;
+	meat_score_hud.y += 20;
+	meat_score_hud.fontscale = 2.5;
+	meat_score_hud.color = ( 0.423, 0.004, 0 );
+	meat_score_hud.alpha = 1;
+	meat_score_hud.hidewheninmenu = 1;
+	meat_score_hud setValue( 0 );
+	return meat_score_hud;
+}
+
+meat_score_axis_icon()
+{
+	mapname = getDvar( "mapname" );
+	color = undefined;
+	if ( mapname == "zm_prison" )
+	{
+		icon = "faction_inmates";
+	}
+	else if ( mapname == "zm_highrise" )
+	{
+		icon = "faction_highrise";
+	}
+	else if ( mapname == "zm_tomb" )
+	{
+		icon = "faction_tomb";
+	}
+	else 
+	{
+		icon = "faction_cia";
+	}
+	team_shader1 = createservericon( icon, 35, 35 );
+	team_shader1.x += 90;
+	team_shader1.y += -20;
+	team_shader1.hideWhenInMenu = 1;
+	team_shader1.alpha = 1;
+	if ( isDefined( color ) )
+	{
+		team_shader1.color = color;
+	}
+	return team_shader1;
+}
+
+show_grief_hud_msg( msg, msg_parm, offset, delay )
+{
+	if( !level.grief_gamerules[ "grief_messages" ].current )
+		return;
+
+	if(!isDefined(delay))
+	{
+		self notify( "show_grief_hud_msg" );
+	}
+	else
+	{
+		self notify( "show_grief_hud_msg2" );
+	}
+
+	self endon( "disconnect" );
+
+	zgrief_hudmsg = newclienthudelem( self );
+	zgrief_hudmsg.alignx = "center";
+	zgrief_hudmsg.aligny = "middle";
+	zgrief_hudmsg.horzalign = "center";
+	zgrief_hudmsg.vertalign = "middle";
+	zgrief_hudmsg.sort = 1;
+	zgrief_hudmsg.y -= 130;
+
+	if ( self issplitscreen() )
+	{
+		zgrief_hudmsg.y += 70;
+	}
+
+	if ( isDefined( offset ) )
+	{
+		zgrief_hudmsg.y += offset;
+	}
+
+	zgrief_hudmsg.foreground = 1;
+	zgrief_hudmsg.fontscale = 5;
+	zgrief_hudmsg.alpha = 0;
+	zgrief_hudmsg.color = ( 1, 1, 1 );
+	zgrief_hudmsg.hidewheninmenu = 1;
+	zgrief_hudmsg.font = "default";
+
+	zgrief_hudmsg endon( "death" );
+
+	zgrief_hudmsg thread show_grief_hud_msg_cleanup(self, delay);
+
+	while ( isDefined( level.hostmigrationtimer ) )
+	{
+		wait 0.05;
+	}
+
+	if(isDefined(delay))
+	{
+		wait delay;
+	}
+
+	if ( isDefined( msg_parm ) )
+	{
+		zgrief_hudmsg settext( msg, msg_parm );
+	}
+	else
+	{
+		zgrief_hudmsg settext( msg );
+	}
+
+	zgrief_hudmsg changefontscaleovertime( 0.25 );
+	zgrief_hudmsg fadeovertime( 0.25 );
+	zgrief_hudmsg.alpha = 1;
+	zgrief_hudmsg.fontscale = 2;
+
+	wait 3.25;
+
+	zgrief_hudmsg changefontscaleovertime( 1 );
+	zgrief_hudmsg fadeovertime( 1 );
+	zgrief_hudmsg.alpha = 0;
+	zgrief_hudmsg.fontscale = 5;
+
+	wait 1;
+
+	if ( isDefined( zgrief_hudmsg ) )
+	{
+		zgrief_hudmsg destroy();
+	}
+}
+
+show_grief_hud_msg_cleanup(player, delay)
+{
+	self endon( "death" );
+
+	self thread show_grief_hud_msg_cleanup_restart_round();
+	self thread show_grief_hud_msg_cleanup_end_game();
+
+	if(!isDefined(delay))
+	{
+		player waittill( "show_grief_hud_msg" );
+	}
+	else
+	{
+		player waittill( "show_grief_hud_msg2" );
+	}
+
+	if ( isDefined( self ) )
+	{
+		self destroy();
+	}
+}
+
+show_grief_hud_msg_cleanup_restart_round()
+{
+	self endon( "death" );
+
+	level waittill( "restart_round" );
+
+	if ( isDefined( self ) )
+	{
+		self destroy();
+	}
+}
+
+show_grief_hud_msg_cleanup_end_game()
+{
+	self endon( "death" );
+
+	level waittill( "end_game" );
+
+	if ( isDefined( self ) )
+	{
+		self destroy();
+	}
+}
+
 move_ring( ring )
 {
 	positions = getstructarray( ring.target, "targetname" );
-	positions = array_randomize( positions );
 	level endon( "end_game" );
 
 	while ( true )
 	{
+		wait 0.05;
+		positions = array_randomize( positions );
 		foreach ( position in positions )
 		{
 			self moveto( position.origin, randomintrange( 30, 45 ) );

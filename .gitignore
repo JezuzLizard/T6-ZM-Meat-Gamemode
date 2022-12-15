@@ -1,3 +1,4 @@
 \compiled
 *.exe
 *.bat
+scripts/zm/vector_test.gsc

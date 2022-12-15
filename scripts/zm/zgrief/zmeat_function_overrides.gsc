@@ -247,9 +247,30 @@ getFreeSpawnpoint_override( spawnpoints, player )
 	{
 		return undefined;
 	}
-	foreach ( spawnpoint in spawnpoints )
+	//If we are using the script_int system to make the starting teams spawn facing each other. 
+	//We only spawn players if their team script_int matches the spawnpoint script_int. 
+	//Treyarch's normal spawnpoints do this to a degree.
+	if ( is_true( level.spawnpoint_system_using_script_ints ) )
 	{
-		if ( spawnpoint.script_int == self.spawnpoint_desired_script_int )
+		foreach ( spawnpoint in spawnpoints )
+		{
+			if ( spawnpoint.script_int == self.spawnpoint_desired_script_int )
+			{
+				if ( isDefined( spawnpoint.player_name ) && spawnpoint.player_name == self.name )
+				{
+					return spawnpoint;
+				}
+				else if ( !isDefined( spawnpoint.player_name ) )
+				{
+					spawnpoint.player_name = self.name;
+					return spawnpoint;
+				}
+			}
+		}
+	}
+	else
+	{
+		foreach ( spawnpoint in spawnpoints )
 		{
 			if ( isDefined( spawnpoint.player_name ) && spawnpoint.player_name == self.name )
 			{
@@ -262,7 +283,7 @@ getFreeSpawnpoint_override( spawnpoints, player )
 			}
 		}
 	}
-	//All spawnpoints taken by previous players try to remove old spawnpoints from disconnected players
+	//If we aren't using the script_int system or we are and we ran out of spawnpoints due to many players joining and leaving try to free up old spawnpoints.
 	foreach ( spawnpoint in spawnpoints )
 	{
 		spawnpoint_is_active = false;
@@ -276,20 +297,23 @@ getFreeSpawnpoint_override( spawnpoints, player )
 		}
 		if ( !spawnpoint_is_active )
 		{
-			if ( spawnpoint.script_int == self.spawnpoint_desired_script_int )
+			if ( is_true( level.spawnpoint_system_using_script_ints ) )
+			{
+				if ( spawnpoint.script_int == self.spawnpoint_desired_script_int )
+				{
+					spawnpoint.player_name = self.name;
+					return spawnpoint;
+				}
+			}
+			else 
 			{
 				spawnpoint.player_name = self.name;
 				return spawnpoint;
 			}
 		}
 	}
-	foreach ( spawnpoint in spawnpoints )
-	{
-		if ( spawnpoint.script_int == self.spawnpoint_desired_script_int )
-		{
-			return spawnpoint;
-		}
-	}
+	//This shouldn't happen but if it does something went wrong.
+	print( "getFreeSpawnpoint() is returning a failsafe spawnpoint THIS SHOULD NOT HAPPEN!" );
 	return spawnpoints[ 0 ];
 }
 
@@ -358,17 +382,6 @@ menuautoassign_override( comingfrommenu )
 			set_game_var( "side_selection", 2 );
 	}
 	side_selection = get_game_var( "side_selection" );
-	if ( get_game_var( "switchedsides" ) )
-	{
-		if ( side_selection == 2 )
-		{
-			side_selection = 1;
-		}
-		else if ( side_selection == 1 )
-		{
-			side_selection = 2;
-		}
-	}
 	if ( side_selection == 1 ) 
 	{
 		if ( assignment == "allies" )
@@ -376,7 +389,7 @@ menuautoassign_override( comingfrommenu )
 			side_selection = 2;
 		}
 	}
-	else 
+	else if ( side_selection == 2 )
 	{
 		if ( assignment == "allies" )
 		{

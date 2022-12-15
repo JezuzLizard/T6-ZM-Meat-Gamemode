@@ -241,12 +241,13 @@ ammo_prize( trig )
 
 minigun_toss_cooldown()
 {
+	level endon( "end_game" );
 	level._minigun_toss_cooldown = 1;
 
 	if ( isdefined( level._minigun_icon ) )
 		level._minigun_icon delete();
 
-	waittill_any_or_timeout( 120, "meat_end" );
+	level waittill_any_or_timeout( 120, "reset_prizes" );
 	playfx( level._effect["poltergeist"], level._minigun_ring_trig.origin );
 	level._minigun_icon = spawn( "script_model", level._minigun_ring_trig.origin );
 	level._minigun_icon setmodel( getweaponmodel( "minigun_zm" ) );
@@ -258,12 +259,13 @@ minigun_toss_cooldown()
 
 ammo_toss_cooldown()
 {
+	level endon( "end_game" );
 	level._ammo_toss_cooldown = 1;
 
 	if ( isdefined( level._ammo_icon ) )
 		level._ammo_icon delete();
 
-	waittill_any_or_timeout( 60, "meat_end" );
+	level waittill_any_or_timeout( 60, "reset_prizes" );
 	playfx( level._effect["poltergeist"], level._ammo_ring_trig.origin );
 	level._ammo_icon = spawn( "script_model", level._ammo_ring_trig.origin );
 	level._ammo_icon setmodel( "zombie_ammocan" );
@@ -328,17 +330,7 @@ get_game_module_players( player )
 
 item_meat_spawn( team )
 {
-	team_keys = getArrayKeys( level._encounters_teams_map );
-	for ( i = 0; i < team_keys.size; i++ )
-	{
-		if ( level._encounters_teams_map[ team_keys[ i ] ] == team )
-		{
-			team = team_keys[ i ];
-			break;
-		}
-	}
 	print( "item_meat_spawn() team: " + team + " org: " + level._meat_start_points[ team ] );
-	printCallstack();
 	level endon( "end_game" );
 	org = level._meat_start_points[ team ];
 	player = getPlayers()[0];
@@ -448,6 +440,11 @@ test_meat_is_under_map()
 	{
 		level.meat_is_under_the_map = true;
 	}
+}
+
+get_other_encounters_team( encounters_team )
+{
+	return encounters_team == "A" ? "B" : "A";
 }
 
 last_team_to_touch_the_meat()

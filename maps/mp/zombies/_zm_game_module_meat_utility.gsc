@@ -31,10 +31,10 @@ get_players_on_encounters_team( team )
 
 	for ( i = 0; i < players.size; i++ )
 	{
-		if ( !isdefined( players[i]._encounters_team ) || players[i]._encounters_team != team )
+		if ( !isdefined( players[ i ]._encounters_team ) || players[ i ]._encounters_team != team )
 			continue;
 
-		players_on_team[players_on_team.size] = players[i];
+		players_on_team[players_on_team.size] = players[ i ];
 	}
 
 	return players_on_team;
@@ -47,13 +47,10 @@ get_alive_players_on_encounters_team( team )
 
 	for ( i = 0; i < players.size; i++ )
 	{
-		if ( !isdefined( players[i]._encounters_team ) || players[i]._encounters_team != team )
+		if ( !is_player_valid( players[ i ] ) || players[ i ]._encounters_team != team )
 			continue;
 
-		if ( players[i].sessionstate == "spectator" || players[i] maps\mp\zombies\_zm_laststand::player_is_in_laststand() )
-			continue;
-
-		players_on_team[players_on_team.size] = players[i];
+		players_on_team[players_on_team.size] = players[ i ];
 	}
 
 	return players_on_team;
@@ -329,11 +326,21 @@ get_game_module_players( player )
 	return get_players_on_encounters_team( player._encounters_team );
 }
 
-item_meat_spawn( origin )
+item_meat_spawn( team )
 {
-	print( "item_meat_spawn() origin: " + origin );
+	team_keys = getArrayKeys( level._encounters_teams_map );
+	for ( i = 0; i < team_keys.size; i++ )
+	{
+		if ( level._encounters_teams_map[ team_keys[ i ] ] == team )
+		{
+			team = team_keys[ i ];
+			break;
+		}
+	}
+	print( "item_meat_spawn() team: " + team + " org: " + level._meat_start_points[ team ] );
+	printCallstack();
 	level endon( "end_game" );
-	org = origin;
+	org = level._meat_start_points[ team ];
 	player = getPlayers()[0];
 	if ( !isDefined( player ) )
 	{

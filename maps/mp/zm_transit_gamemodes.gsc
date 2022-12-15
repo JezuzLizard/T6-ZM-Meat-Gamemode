@@ -111,8 +111,8 @@ zmeat_town_main()
 	level._meat_location = "town";	
 	//level._meat_start_point = random(getstructarray("meat_2_spawn_points","targetname")).origin;//(4352, -13824, 224);
 	level._meat_start_points = [];
-	level._meat_start_points[ "A" ] = ( 1189.16, -514.579, -61.875 + 5 );
-	level._meat_start_points[ "B" ] = ( 1648.84, -319.649, -61.875 + 5 );
+	level._meat_start_points[ "axis" ] = ( 1189.16, -514.579, -66.875 );
+	level._meat_start_points[ "allies" ] = ( 1648.84, -319.649, -66.875 );
 	level._meat_team_1_zombie_spawn_points = getstructarray("meat_2_team_1_zombie_spawn_points","targetname");
 	level._meat_team_2_zombie_spawn_points = getstructarray("meat_2_team_2_zombie_spawn_points","targetname");
 	register_zmeat_riser_location( ( 1583.74, 665.528, -61.875 ), "A" );

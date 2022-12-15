@@ -36,6 +36,11 @@ main()
 	game[ "gamestarted" ] = undefined;
 	level.timelimitoverride = true;
 	maps\mp\gametypes_zm\_zm_gametype::main();
+	level._encounters_teams_map = [];
+	level._encounters_teams_map[ "axis" ] = "A";
+	level._encounters_teams_map[ "allies" ] = "B";
+	set_gamemode_var( "match_end_notify", "meat_end" );
+    set_gamemode_var( "match_end_func", ::meat_end_match );
 	onplayerconnect_callback( ::meat_on_player_connect );
 	level.onprecachegametype = ::onprecachegametype;
 	level.onstartgametype = ::onstartgametype;
@@ -92,7 +97,7 @@ meat_hub_start_func()
 	starting_team = ( cointoss() ? "A" : "B" );
 	level.meat_starting_team = starting_team;
 	level thread meat_player_initial_spawn();
-	level thread item_meat_reset( level._meat_start_points[ level.meat_starting_team ] );
+	level thread item_meat_reset( level.meat_starting_team );
 	level thread spawn_meat_zombies();
 	level thread monitor_meat_on_team();
 	level thread init_minigun_ring();
@@ -191,6 +196,7 @@ monitor_meat_on_side()
 
 	while ( true )
 	{
+		wait 0.05;		
 		if ( isdefined( level.item_meat ) )
 		{
 			if ( is_true( level.meat_touched_middle_volume ) )
@@ -209,6 +215,7 @@ monitor_meat_on_side()
 					level.meat_lost_time = undefined;
 				}
 			}
+			/*
 			else if ( isdefined( last_team ) )
 			{
 				if ( !isdefined( level.meat_lost_time ) )
@@ -217,17 +224,18 @@ monitor_meat_on_side()
 				{
 					add_meat_event( "level_lost_meat" );
 					new_team = ( cointoss() ? "A" : "B" );
-					level thread item_meat_reset( level._meat_start_points[ new_team ], 1 );
+					level thread item_meat_reset( new_team, true );
 					level.meat_lost_time = undefined;
 
 					assign_meat_to_team( undefined, new_team );
 				}
 			}
+			*/
 		}
 		else
 		{
 			player_with_meat = get_player_with_meat();
-
+			/*
 			if ( !isdefined( player_with_meat ) )
 			{
 				if ( !isdefined( level.meat_lost_time ) )
@@ -236,24 +244,22 @@ monitor_meat_on_side()
 				{
 					add_meat_event( "level_lost_meat" );
 					new_team = ( cointoss() ? "A" : "B" );
-					level thread item_meat_reset( level._meat_start_points[ new_team ], 1 );
+					level thread item_meat_reset( new_team, true );
 					level.meat_lost_time = undefined;
 					assign_meat_to_team( undefined, new_team );
 				}
 			}
 			else
 				level.meat_lost_time = undefined;
+			*/
 		}
 
 		if ( isdefined( level._meat_on_team ) && isdefined( last_team ) && level._meat_on_team != last_team )
 		{
-			level notify( "clear_ignore_all" );
 			add_meat_event( "level_meat_team", level._meat_on_team );
 			last_team = level._meat_on_team;
 			assign_meat_to_team( undefined, level._meat_on_team );
 		}
-
-		wait 0.05;
 	}
 }
 
@@ -283,24 +289,21 @@ hold_meat_monitor()
 
 	while ( true )
 	{
+		wait 0.2;
 		player = get_player_with_meat();
 
 		if ( !isdefined( player ) )
 		{
-			wait 0.2;
 			continue;
 		}
 
 		if ( !should_try_to_bring_back_teammate( player._encounters_team ) )
 		{
-			wait 0.2;
 			continue;
 		}
 
 		if ( !( isdefined( player._bringing_back_teammate ) && player._bringing_back_teammate ) )
 			player thread bring_back_teammate_progress();
-
-		wait 0.2;
 	}
 }
 
@@ -310,7 +313,7 @@ wait_for_player_downed()
 
 	while ( isdefined( self ) )
 	{
-		self waittill_any( "player_downed", "fake_death", "death" );
+		self waittill( "player_downed" );
 		add_meat_event( "player_down", self );
 		wait 0.1;
 
@@ -334,7 +337,6 @@ item_meat_watch_stationary()
 
 	add_meat_event( "meat_stationary", self );
 	level._meat_moving = 0;
-	level._meat_splitter_activated = 0;
 	level._last_person_to_throw_meat = undefined;
 	self.meat_is_moving = 0;
 }
@@ -390,7 +392,6 @@ item_meat_pickup()
 	self.meat_is_moving = false;
 	self.meat_is_flying = false;
 	level._meat_moving = false;
-	level._meat_splitter_activated = false;
 	self notify( "picked_up" );
 }
 
@@ -579,7 +580,6 @@ spike_the_meat( meat )
 	meat cleanup_meat();
 	level._last_person_to_throw_meat = self;
 	level._last_person_to_throw_meat_time = gettime();
-	level._meat_splitter_activated = 0;
 
 	kickangles = self.angles;
 	kickangles += ( randomfloatrange( -30, -20 ), randomfloatrange( -5, 5 ), 0 );
@@ -733,7 +733,7 @@ destroy_revive_progress_on_downed()
 {
 	level endon( "end_game" );
 	level endon( "meat_end" );
-	self waittill_any( "fake_death", "player_downed", "death" );
+	self waittill( "player_downed" );
 	self destroy_revive_progress();
 }
 
@@ -748,8 +748,11 @@ destroy_revive_progress()
 
 kick_the_meat( meat, laststand_nudge )
 {
+	self endon( "disconnect" );
 	if ( isdefined( self._kicking_meat ) && self._kicking_meat )
+	{
 		return;
+	}
 
 	self._kicking_meat = true;
 	self._spawning_meat = true;
@@ -758,7 +761,6 @@ kick_the_meat( meat, laststand_nudge )
 	meat cleanup_meat();
 	level._last_person_to_throw_meat = self;
 	level._last_person_to_throw_meat_time = gettime();
-	level._meat_splitter_activated = 0;
 
 	kickangles = self.angles;
 	kickangles += ( randomfloatrange( -30, -20 ), randomfloatrange( -5, 5 ), 0 );
@@ -777,7 +779,7 @@ kick_the_meat( meat, laststand_nudge )
 	}
 
 	launchvel = vectorscale( launchdir, speed );
-	grenade = self magicgrenadetype( get_gamemode_var( "item_meat_name" ), org, ( launchvel[0], launchvel[1], height_boost ) );
+	grenade = self magicgrenadetype( get_gamemode_var( "item_meat_name" ), org, ( launchvel[ 0 ], launchvel[ 1 ], height_boost ) );
 	grenade playsound( "zmb_meat_meat_tossed" );
 	grenade thread waittill_loopstart();
 
@@ -800,22 +802,6 @@ can_revive( revivee )
 		return false;
 
 	return true;
-}
-
-pickup_origin()
-{
-	origin = self get_eye();
-
-	if ( !isdefined( origin ) )
-		origin = self gettagorigin( "tag_weapon" );
-
-	if ( !isdefined( origin ) )
-		origin = self gettagorigin( "tag_weapon_right" );
-
-	if ( !isdefined( origin ) )
-		origin = self.origin;
-
-	return origin;
 }
 
 can_spike_meat()
@@ -918,9 +904,8 @@ spawn_meat_zombies()
 	force_chaser = 0;
 	num = 0;
 	max_ai_num = 24;
-	//level waittill( "meat_grabbed" );
-	//level waittill( "meat_assigned_to_team" );
 	flag_wait( "initial_blackscreen_passed" );
+	level waittill( "meat_assigned_to_team" );
 	wait 10;
 	while ( true )
 	{
@@ -1004,11 +989,11 @@ monitor_meat_on_team()
 			{
 				if ( level._meat_on_team == players[ i ]._encounters_team )
 				{
-					players[ i ].ignoreme = false;
+					players[ i ].ignoreme = true;
 				}
 				else 
 				{
-					players[ i ].ignoreme = true;
+					players[ i ].ignoreme = false;
 				}
 			}
 			else
@@ -1019,7 +1004,7 @@ monitor_meat_on_team()
 	}
 }
 
-item_meat_reset( origin, immediate )
+item_meat_reset( team, immediate )
 {
 	level notify( "new_meat" );
 	level endon( "new_meat" );
@@ -1035,8 +1020,8 @@ item_meat_reset( origin, immediate )
 
 	item_meat_clear();
 
-	if ( isdefined( origin ) )
-		item_meat_spawn( origin );
+	if ( isdefined( team ) )
+		item_meat_spawn( team );
 }
 
 meat_player_initial_spawn()
@@ -1083,25 +1068,6 @@ can_touch_meat()
 		//print( "player can't touch the meat because self.dont_touch_the_meat is true" );
 		return false;
 	}
-	/*
-	meat = level.item_meat;
-
-	if ( isdefined( meat ) )
-	{
-		meatorg = meat.origin + vectorscale( ( 0, 0, 1 ), 8.0 );
-		trace = bullettrace( self pickup_origin(), meatorg, 0, meat );
-		if ( distancesquared( trace["position"], meatorg ) < 1 )
-		{
-			print( "distancesquared( trace[ position ], meatorg ) < 1" );
-			return true;
-		}
-		else 
-		{
-			print( "distancesquared( trace[ position ], meatorg ) > 1" );
-			return false;
-		}
-	}
-	*/
 	return true;
 }
 
@@ -1254,44 +1220,43 @@ item_meat_watch_trigger( trigger, callback, playersoundonuse, npcsoundonuse )
 	while ( true )
 	{
 		trigger waittill( "usetrigger", player );
+		// volley = self.meat_is_flying && player meleebuttonpressed();
+		// player.volley_meat = volley;
 
-		volley = self.meat_is_flying && player meleebuttonpressed();
-		player.volley_meat = volley;
+		// if ( volley )
+		// 	add_meat_event( "player_volley", player, self );
+		// else if ( self.meat_is_moving )
+		// 	add_meat_event( "player_catch", player, self );
+		// else
+		// 	add_meat_event( "player_take", player, self );
 
-		if ( volley )
-			add_meat_event( "player_volley", player, self );
-		else if ( self.meat_is_moving )
-			add_meat_event( "player_catch", player, self );
-		else
-			add_meat_event( "player_take", player, self );
+		// curr_weap = player getcurrentweapon();
 
-		curr_weap = player getcurrentweapon();
+		// if ( !is_meat( curr_weap ) )
+		// 	player.pre_meat_weapon = curr_weap;
 
-		if ( !is_meat( curr_weap ) )
-			player.pre_meat_weapon = curr_weap;
+		// if ( self.meat_is_moving )
+		// {
+		// 	if ( volley )
+		// 		self item_meat_volley( player );
+		// 	else
+		// 		self item_meat_caught( player, self.meat_is_flying );
+		// }
 
-		if ( self.meat_is_moving )
-		{
-			if ( volley )
-				self item_meat_volley( player );
-			else
-				self item_meat_caught( player, self.meat_is_flying );
-		}
+		// self item_meat_pickup();
 
-		self item_meat_pickup();
+		// if ( isdefined( playersoundonuse ) )
+		// 	player playlocalsound( playersoundonuse );
 
-		if ( isdefined( playersoundonuse ) )
-			player playlocalsound( playersoundonuse );
+		// if ( isdefined( npcsoundonuse ) )
+		// 	player playsound( npcsoundonuse );
 
-		if ( isdefined( npcsoundonuse ) )
-			player playsound( npcsoundonuse );
-
-		if ( volley )
-			player thread spike_the_meat( self );
-		else
-		{
-			self thread [[ callback ]]( player );
-		}
+		// if ( volley )
+		// 	player thread spike_the_meat( self );
+		// else
+		// {
+		self thread [[ callback ]]( player );
+		// }
 	}
 }
 
@@ -1305,6 +1270,7 @@ item_meat_caught( player, in_air )
 
 item_meat_on_pickup( player )
 {
+	print( "player picked up the meat" );
 	player maps\mp\gametypes_zm\_weaponobjects::deleteweaponobjecthelper( self );
 	self cleanup_meat();
 	level.item_meat = undefined;
@@ -1323,7 +1289,7 @@ item_meat_on_pickup( player )
 
 waittill_thrown()
 {
-	self endon( "death" );
+	self endon( "bled_out" );
 	self endon( "disconnect" );
 	self endon( "reset_downed" );
 
@@ -1378,23 +1344,17 @@ zombie_path_timer_override()
 
 meat_poi_override_func()
 {
-	if ( isdefined( level.item_meat ) && ( isdefined( level.item_meat.meat_is_moving ) && level.item_meat.meat_is_moving ) )
+	if ( isdefined( level.the_meat ) && ( isdefined( level.the_meat.meat_is_moving ) && level.the_meat.meat_is_moving ) )
 	{
-		if ( abs( level.item_meat.origin[2] - groundpos( level.item_meat.origin )[2] ) < 35 )
+		if ( abs( level.the_meat.origin[ 2 ] - groundpos( level.the_meat.origin )[ 2 ] ) < 35 )
 		{
-			level._zombies_ignoring_all = 0;
-			level notify( "clear_ignore_all" );
 			return undefined;
 		}
-
-		level thread set_ignore_all();
 		meat_poi = [];
-		meat_poi[0] = groundpos( level.item_meat.origin );
-		meat_poi[1] = level.item_meat;
+		meat_poi[ 0 ] = groundpos( level.the_meat.origin );
+		meat_poi[ 1 ] = level.the_meat;
 		return meat_poi;
 	}
-
-	level._zombies_ignoring_all = 0;
 	return undefined;
 }
 
@@ -1450,7 +1410,7 @@ updatedownedcounters()
 
 waitforrevive( team )
 {
-	self endon( "death" );
+	self endon( "bled_out" );
 
 	self waittill( "player_revived" );
 
@@ -1474,10 +1434,11 @@ assign_meat_to_team( player, encounters_team )
 		meat_team = encounters_team;
 	}
 
+	level._meat_on_team = meat_team;
+	level notify( "meat_assigned_to_team", meat_team );
 	if ( !isDefined( player ) )
 	{
-		level._meat_on_team = meat_team;
-		level notify( "meat_assigned_to_team" );
+		return;
 	}
 	teamplayers = get_players_on_encounters_team( meat_team );
 	for ( i = 0; i < teamplayers.size; i++ )
@@ -1513,11 +1474,12 @@ slow_down_player_with_meat()
 
 reset_meat_when_player_downed()
 {
+	self endon( "disconnect" );
 	self notify( "reset_downed" );
 	self endon( "reset_downed" );
 	level endon( "meat_reset" );
 	level endon( "meat_thrown" );
-	self waittill_any( "player_downed", "death", "fake_death", "replace_weapon_powerup" );
+	self waittill_any( "player_downed", "replace_weapon_powerup" );
 	self._has_meat = false;
 	self._spawning_meat = true;
 	level.the_meat = self magicgrenadetype( get_gamemode_var( "item_meat_name" ), self.origin + ( randomintrange( 5, 10 ), randomintrange( 5, 10 ), 15 ), ( randomintrange( 5, 10 ), randomintrange( 5, 10 ), 0 ) );
@@ -1586,7 +1548,7 @@ spawn_player_meat_manager()
 
 player_watch_weapon_change()
 {
-	self endon( "death_or_disconnect" );
+	self endon( "disconnect" );
 
 	for (;;)
 	{
@@ -1604,7 +1566,7 @@ player_watch_weapon_change()
 
 player_watch_grenade_throw()
 {
-	self endon( "death_or_disconnect" );
+	self endon( "disconnect" );
 
 	for (;;)
 	{
@@ -1684,7 +1646,8 @@ wait_for_team_death( team )
 	while ( true )
 	{
 		wait 1;
-
+		while ( getDvarIntDefault( "zmeat_disable_game_ending", 0 ) )
+			wait 0.1;
 		while ( isdefined( level._checking_for_save ) && level._checking_for_save )
 			wait 0.1;
 
@@ -1749,13 +1712,22 @@ start_round()
 	for ( i = 0; i < players.size; i++ )
 	{
 		players[i] freeze_player_controls( 0 );
-		players[i] sprintuprequired();
+		//players[i] sprintuprequired();
 	}
 
 	flag_set( "start_encounters_match_logic" );
 	flag_clear( "pregame" );
 	level._module_round_hud destroy();
-	level thread meat_intro( level._meat_start_points[ level.meat_starting_team ] );
+	team_keys = getArrayKeys( level._encounters_teams_map );
+	for ( i = 0; i < team_keys.size; i++ )
+	{
+		if ( level._encounters_teams_map[ team_keys[ i ] ] == level.meat_starting_team )
+		{
+			team = team_keys[ i ];
+			break;
+		}
+	}
+	level thread meat_intro( level._meat_start_points[ team_keys[ i ] ] );
 }
 
 handle_super_sprint_mantle()
@@ -1853,10 +1825,10 @@ watch_meat_in_map()
 		//if ( meat_trace[ 2 ] < level.meat_under_the_map_limit[ 2 ] )
 		if ( level.the_meat.origin[ 2 ] < level.meat_under_the_map_limit[ 2 ] )
 		{
-			level.meat_is_under_the_map = true;
-			level thread item_meat_reset( level._meat_start_points[ level.meat_starting_team ], true );
-			//apply_penalty_to_team();
 			print( "meat is under the map 1" );
+			level.meat_is_under_the_map = true;
+			item_meat_reset( level.meat_starting_team, true );
+			//apply_penalty_to_team();
 			continue;
 		}
 		if ( isDefined( level.the_meat ) && !check_point_is_in_polygon( level.meat_bounds, level.the_meat.origin ) && !level.meat_is_under_the_map )
@@ -1873,7 +1845,7 @@ watch_meat_in_map()
 			drop = 0.5 * gravity * ( time * time );
 			velocity = ( ( delta[0] / time ) / level.meat_polygon_bounce_factor, ( delta[1] / time ) / level.meat_polygon_bounce_factor, ( delta[2] - drop ) / time );
 			cur_origin = level.the_meat.origin;
-			print( "velocity: " + velocity );
+			//print( "velocity: " + velocity );
 			level.the_meat cleanup_meat();
 			level.the_meat = getPlayers()[ 0 ] magicgrenadetype( get_gamemode_var( "item_meat_name" ), cur_origin, velocity );
 			level.the_meat waittill_any_timeout( time, "stationary", "death" );

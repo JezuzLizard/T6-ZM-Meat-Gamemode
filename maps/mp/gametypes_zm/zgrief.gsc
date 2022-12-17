@@ -50,9 +50,13 @@ main()
 	level._game_module_custom_spawn_init_func = maps\mp\gametypes_zm\_zm_gametype::custom_spawn_init_func;
 	level._no_static_unitriggers = true;
 	level._game_module_player_damage_callback = maps\mp\gametypes_zm\_zm_gametype::game_module_player_damage_callback;
+	level._game_module_player_damage_grief_callback = ::game_module_player_damage_grief_callback;
 	level.zm_mantle_over_40_move_speed_override = ::handle_super_sprint_mantle;
 	level.no_end_game_check = true;
 	level._game_module_game_end_check = ::always_false;
+	level.custom_end_screen = ::custom_end_screen;
+	//level.check_valid_spawn_override = ::meat_check_valid_spawn_override;
+	level.check_for_valid_spawn_near_team_callback = ::meat_check_valid_spawn_override;
 	level thread maps\mp\gametypes_zm\_zm_gametype::init();
 	level.can_revive_game_module = ::can_revive;
 	init_animtree();
@@ -81,7 +85,7 @@ onprecachegametype()
 	precachemodel( "p6_zm_sign_meat_01_step3" );
 	precachemodel( "p6_zm_sign_meat_01_step4" );
 	precachemodel( "collision_player_wall_512x512x10" );
-	level thread spawn_side_trigger();
+	//level thread spawn_side_trigger();
 }
 
 init_item_meat()
@@ -134,6 +138,7 @@ meat_hub_start_func()
 	level thread item_meat_watch_for_throw();
 	level thread hold_meat_monitor();
 	flag_wait( "start_encounters_match_logic" );
+	flag_set( "begin_spawning" );
 	level.team_a_downed = 0;
 	level.team_b_downed = 0;
 }
@@ -168,7 +173,7 @@ meat_on_player_disconnect()
 	players = getPlayers();
 
 	for ( i = 0; i < players.size; i++ )
-		team_counts[players[i]._encounters_team]++;
+		team_counts[players[ i ]._encounters_team]++;
 
 	//if ( team_counts["A"] == 0 )
 	//	maps\mp\gametypes_zm\_zm_gametype::end_rounds_early( "B" );
@@ -255,13 +260,14 @@ monitor_meat_on_side()
 				level.meat_lost_time = undefined;
 			*/
 		}
-
+		/*
 		if ( isdefined( level._meat_on_team ) && isdefined( last_team ) && level._meat_on_team != last_team )
 		{
 			add_meat_event( "level_meat_team", level._meat_on_team );
 			last_team = level._meat_on_team;
 			assign_meat_to_team( undefined, level._meat_on_team );
 		}
+		*/
 	}
 }
 
@@ -683,7 +689,7 @@ should_try_to_bring_back_teammate( team )
 
 	for ( i = 0; i < players.size; i++ )
 	{
-		if ( players[i]._encounters_team == team && players[i].sessionstate == "spectator" )
+		if ( players[ i ]._encounters_team == team && players[ i ].sessionstate == "spectator" )
 			return true;
 	}
 
@@ -696,9 +702,9 @@ bring_back_dead_teammate( team )
 
 	for ( i = 0; i < players.size; i++ )
 	{
-		if ( players[i]._encounters_team == team && players[i].sessionstate == "spectator" )
+		if ( players[ i ]._encounters_team == team && players[ i ].sessionstate == "spectator" )
 		{
-			player = players[i];
+			player = players[ i ];
 			break;
 		}
 	}
@@ -922,21 +928,16 @@ spawn_meat_zombies()
 		else
 		{
 			side = level._meat_on_team;
-			if ( isDefined( side ) )
+			if ( !isDefined( side ) )
 			{
-				spawn_points = level._zmeat_zombie_spawn_locations[ side ];
+				side = level.meat_starting_team;
 			}
-			else 
-			{
-				random_side = ( cointoss() ? "A" : "B" );
-				spawn_points = level._zmeat_zombie_spawn_locations[ random_side ];
-			}
-			spawn_points = array_randomize( spawn_points );
+			spawn_points = array_randomize( level._zmeat_zombie_spawn_locations[ side ] );
 
-			zombie = spawn_meat_zombie( level.meat_spawners[0], "meat_zombie", spawn_points[ 0 ], level._meat_zombie_spawn_health );
+			zombie = spawn_meat_zombie( level.meat_spawners[ 0 ], "meat_zombie", spawn_points[ 0 ], level._meat_zombie_spawn_health );
 
 			if ( isdefined( zombie ) )
-				zombie thread make_super_sprinter_after_time( 0.25 );
+				zombie thread make_super_sprinter_after_time( 0.1 );
 		}
 	}
 }
@@ -1033,8 +1034,8 @@ meat_player_initial_spawn()
 	for ( i = 0; i < players.size; i++ )
 	{
 		if ( isdefined( level.custom_player_fake_death_cleanup ) )
-			players[i] [[ level.custom_player_fake_death_cleanup ]]();
-		players[i] meat_player_setup();
+			players[ i ] [[ level.custom_player_fake_death_cleanup ]]();
+		players[ i ] meat_player_setup();
 	}
 
 	waittillframeend;
@@ -1273,7 +1274,7 @@ item_meat_caught( player, in_air )
 
 item_meat_on_pickup( player )
 {
-	//print( "player picked up the meat" );
+	print( "player picked up the meat" );
 	player maps\mp\gametypes_zm\_weaponobjects::deleteweaponobjecthelper( self );
 	self cleanup_meat();
 	level.item_meat = undefined;
@@ -1392,7 +1393,6 @@ waitforrevive( team )
 assign_meat_to_team( player, encounters_team )
 {
 	meat_team = undefined;
-	players = getPlayers();
 
 	if ( isdefined( player ) )
 	{
@@ -1401,6 +1401,36 @@ assign_meat_to_team( player, encounters_team )
 	else if ( isdefined( encounters_team ) )
 	{
 		meat_team = encounters_team;
+	}
+	players = getPlayers();
+	/*
+	if ( isdefined( player ) )
+	{
+		for ( i = 0; i < players.size; i++ )
+		{
+			if ( !isdefined( players[i] ) )
+				continue;
+
+			if ( players[ i ] != player || isdefined( player._meat_hint_shown ) && player._meat_hint_shown )
+			{
+				players[ i ] iprintlnbold( &"ZOMBIE_GRABBED_MEAT", player.name );
+			}
+		}
+
+	}
+	*/
+	if ( isdefined( encounters_team ) && is_true( level.meat_show_prints_to_players ) )
+	{
+		for ( i = 0; i < players.size; i++ )
+		{
+			if ( players[ i ]._encounters_team == encounters_team )
+			{
+				players[ i ] iprintlnbold( &"ZOMBIE_YOUR_TEAM_MEAT" );
+				continue;
+			}
+
+			players[ i ] iprintlnbold( &"ZOMBIE_OTHER_TEAM_MEAT" );
+		}
 	}
 
 	level._meat_on_team = meat_team;
@@ -1412,18 +1442,18 @@ assign_meat_to_team( player, encounters_team )
 	teamplayers = get_players_on_encounters_team( meat_team );
 	for ( i = 0; i < teamplayers.size; i++ )
 	{
-		if ( !isdefined( teamplayers[i] ) )
+		if ( !isdefined( teamplayers[ i ] ) )
 			continue;
 
-		if ( isdefined( player ) && teamplayers[i] == player )
+		if ( teamplayers[ i ] == player )
 		{
-			if ( isdefined( teamplayers[i]._has_meat ) && teamplayers[i]._has_meat )
+			if ( isdefined( teamplayers[ i ]._has_meat ) && teamplayers[ i ]._has_meat )
 				continue;
 
-			teamplayers[i]._has_meat = 1;
-			teamplayers[i] thread slow_down_player_with_meat();
-			teamplayers[i] thread reset_meat_when_player_downed();
-			teamplayers[i] thread reset_meat_when_player_disconnected();
+			teamplayers[ i ]._has_meat = 1;
+			teamplayers[ i ] thread slow_down_player_with_meat();
+			teamplayers[ i ] thread reset_meat_when_player_downed();
+			teamplayers[ i ] thread reset_meat_when_player_disconnected();
 		}
 	}
 }
@@ -1478,11 +1508,11 @@ item_meat_drop( org, team )
 	{
 		return;
 	}
-	players = get_alive_players_on_encounters_team( team );
+	players = getPlayers();
 
 	if ( players.size > 0 )
 	{
-		player = players[0];
+		player = players[ 0 ];
 		player endon( "disconnect" );
 		player._spawning_meat = true;
 		level.the_meat = player magicgrenadetype( get_gamemode_var( "item_meat_name" ), org + ( randomintrange( 5, 10 ), randomintrange( 5, 10 ), 15 ), ( 0, 0, 0 ) );
@@ -1506,8 +1536,8 @@ get_player_with_meat()
 
 	for ( i = 0; i < players.size; i++ )
 	{
-		if ( isdefined( players[i]._has_meat ) && players[i]._has_meat )
-			return players[i];
+		if ( isdefined( players[ i ]._has_meat ) && players[ i ]._has_meat )
+			return players[ i ];
 	}
 
 	return undefined;
@@ -1603,18 +1633,21 @@ switch_team_has_meat_on_trigger()
 {
 	while ( true )
 	{
-		if ( isDefined( level.the_meat ) && level.the_meat isTouching( self ) )
+		meat_touched_middle_volume = false;
+		while ( isDefined( level.the_meat ) && level.the_meat isTouching( self ) )
 		{
-			if ( isDefined( level._meat_on_team ) )
+			meat_touched_middle_volume = true;
+			wait 0.05;
+		}
+		if ( isDefined( level.the_meat ) && meat_touched_middle_volume )
+		{
+			if ( level._meat_on_team == "A" )
 			{
-				if ( level._meat_on_team == "A" )
-				{
-					level._meat_on_team = "B";
-				}
-				else 
-				{
-					level._meat_on_team = "A";
-				}
+				level._meat_on_team = "B";
+			}
+			else 
+			{
+				level._meat_on_team = "A";
 			}
 		}
 		wait 0.05;
@@ -1825,7 +1858,7 @@ start_round()
 	players = getPlayers();
 
 	for ( i = 0; i < players.size; i++ )
-		players[i] freeze_player_controls( 1 );
+		players[ i ] freeze_player_controls( 1 );
 
 	level._module_round_hud.alpha = 1;
 	label = &"Next Round Starting In  ^2";
@@ -1841,46 +1874,46 @@ start_round()
 
 	for ( i = 0; i < players.size; i++ )
 	{
-		players[i] freeze_player_controls( 0 );
-		//players[i] sprintuprequired();
+		players[ i ] freeze_player_controls( 0 );
+		//players[ i ] sprintuprequired();
 	}
 
 	flag_set( "start_encounters_match_logic" );
 	flag_clear( "pregame" );
 	level._module_round_hud destroy();
 
-	if ( !isDefined( level.meat_did_intro ) )
+	if ( !isDefined( level.meat_first_round ) )
 	{
 		level thread wait_for_team_death();
 		hud_init();
 		//level thread meat_intro( level._meat_start_points[ level.meat_starting_team ] );
 		level notify( "reset_meat" );
-		level.meat_did_intro = true;
+		level.meat_first_round = true;
 	}
 	else 
 	{
-		level.meat_starting_team = ( cointoss() ? "A" : "B" );
+		level.meat_starting_team = get_other_encounters_team( level.meat_starting_team );
 		item_meat_reset( level.meat_starting_team, true );
 	}
 }
 
 handle_super_sprint_mantle()
 {
-    traversealias = "barrier_walk";
+	traversealias = "barrier_walk";
 
-    switch ( self.zombie_move_speed )
-    {
-        case "chase_bus":
+	switch ( self.zombie_move_speed )
+	{
+		case "chase_bus":
 		case "super_sprint":
 			traversealias = "barrier_sprint";
 			break;
-        default:
+		default:
 /#
-            assertmsg( "Zombie move speed of '" + self.zombie_move_speed + "' is not supported for mantle_over_40." );
+			assertmsg( "Zombie move speed of '" + self.zombie_move_speed + "' is not supported for mantle_over_40." );
 #/
-    }
+	}
 
-    return traversealias;
+	return traversealias;
 }
 
 always_false()
@@ -1893,8 +1926,10 @@ watch_meat_in_map()
 	level.meat_polygon_bounce_factor = 10;
 	level.meat_is_under_the_map = false;
 	level endon( "end_game" );
+	i = 0;
 	while ( true )
 	{
+		level.meat_show_prints_to_players = false;
 		wait 0.05;
 		waittillframeend;
 		if ( !isDefined( level.the_meat ) )
@@ -1910,7 +1945,7 @@ watch_meat_in_map()
 		//if ( meat_trace[ 2 ] < level.meat_under_the_map_limit[ 2 ] )
 		if ( level.the_meat.origin[ 2 ] < level.meat_under_the_map_limit[ 2 ] )
 		{
-			print( "meat is under the map 1" );
+			print( "meat is under the map " + level.the_meat.origin );
 			level.meat_is_under_the_map = true;
 			item_meat_reset( level.meat_starting_team, true );
 			//apply_penalty_to_team();
@@ -1933,7 +1968,121 @@ watch_meat_in_map()
 			//print( "velocity: " + velocity );
 			level.the_meat cleanup_meat();
 			level.the_meat = getPlayers()[ 0 ] magicgrenadetype( get_gamemode_var( "item_meat_name" ), cur_origin, velocity );
-			level.the_meat waittill_any_timeout( time, "stationary", "death" );
+			level.the_meat thread check_meat_is_back_in_bounds();
+			level.the_meat waittill_any_timeout( time, "stationary", "death", "in_bounds" );
 		}
+		first_team_to_check = ( cointoss() ? "A" : "B" );
+		//first_team_to_check = "A";
+		second_team_to_check = get_other_encounters_team( first_team_to_check );
+		if ( check_point_is_in_polygon( level.meat_team_bounds[ first_team_to_check ], level.the_meat.origin ) )
+		{
+			assign_meat_to_team( undefined, first_team_to_check );
+		}
+		else if ( check_point_is_in_polygon( level.meat_team_bounds[ second_team_to_check ], level.the_meat.origin ) )
+		{
+			assign_meat_to_team( undefined, second_team_to_check );
+		}
+		else 
+		{
+			//print( "first team: " + first_team_to_check + " " + level.meat_team_bounds[ first_team_to_check ][ 0 ] );
+			//print( "second team: " + second_team_to_check + " " + level.meat_team_bounds[ second_team_to_check ] );
+			print( "meat is outside team bounds " + level.the_meat.origin );
+			//level.meat_is_not_in_team_bounds = true;
+			//item_meat_reset( level.meat_starting_team, true );
+		}
+		if ( ( i % 40 ) == 0 )
+		{
+			level.meat_show_prints_to_players = true;
+			i = 0;
+		}
+		i++;
 	}
+}
+
+check_meat_is_back_in_bounds()
+{
+	self endon( "stationary" );
+	self endon( "death" );
+	self notify( "check_meat_is_back_in_bounds" );
+	self endon( "check_meat_is_back_in_bounds" );
+
+	while ( !check_point_is_in_polygon( level.meat_playable_bounds, self.origin ) )
+	{
+		wait 0.05;
+	}
+
+	self notify( "in_bounds" );
+}
+
+meat_check_valid_spawn_override( player, return_struct )
+{
+	print( player.name + " meat_check_valid_spawn_override() " );
+	if ( return_struct )
+	{
+		return player.spectator_respawn;
+	}
+	else 
+	{
+		return player.spectator_respawn.origin;
+	}
+}
+
+custom_end_screen()
+{
+	players = get_players();
+
+	for ( i = 0; i < players.size; i++ )
+	{
+		players[ i ].game_over_hud = newclienthudelem( players[ i ] );
+		players[ i ].game_over_hud.alignx = "center";
+		players[ i ].game_over_hud.aligny = "middle";
+		players[ i ].game_over_hud.horzalign = "center";
+		players[ i ].game_over_hud.vertalign = "middle";
+		players[ i ].game_over_hud.y -= 130;
+		players[ i ].game_over_hud.foreground = 1;
+		players[ i ].game_over_hud.fontscale = 3;
+		players[ i ].game_over_hud.alpha = 0;
+		players[ i ].game_over_hud.color = ( 1, 1, 1 );
+		players[ i ].game_over_hud.hidewheninmenu = 1;
+		players[ i ].game_over_hud settext( &"ZOMBIE_GAME_OVER" );
+		players[ i ].game_over_hud fadeovertime( 1 );
+		players[ i ].game_over_hud.alpha = 1;
+
+		players[ i ].survived_hud = newclienthudelem( players[ i ] );
+		players[ i ].survived_hud.alignx = "center";
+		players[ i ].survived_hud.aligny = "middle";
+		players[ i ].survived_hud.horzalign = "center";
+		players[ i ].survived_hud.vertalign = "middle";
+		players[ i ].survived_hud.y -= 100;
+		players[ i ].survived_hud.foreground = 1;
+		players[ i ].survived_hud.fontscale = 2;
+		players[ i ].survived_hud.alpha = 0;
+		players[ i ].survived_hud.color = ( 1, 1, 1 );
+		players[ i ].survived_hud.hidewheninmenu = 1;
+
+		winner_text = &"ZOMBIE_GRIEF_WIN";
+		loser_text = &"ZOMBIE_GRIEF_LOSE";
+
+		if ( level.round_number < 2 )
+		{
+			winner_text = &"ZOMBIE_GRIEF_WIN_SINGLE";
+			loser_text = &"ZOMBIE_GRIEF_LOSE_SINGLE";
+		}
+
+		if ( isdefined( level.host_ended_game ) && level.host_ended_game )
+			players[ i ].survived_hud settext( &"MP_HOST_ENDED_GAME" );
+		else if ( isdefined( level.gamemodulewinningteam ) && players[ i ]._encounters_team == level.gamemodulewinningteam )
+			players[ i ].survived_hud settext( winner_text, level.round_number );
+		else
+			players[ i ].survived_hud settext( loser_text, level.round_number );
+
+		players[ i ].survived_hud fadeovertime( 1 );
+		players[ i ].survived_hud.alpha = 1;
+	}
+}
+
+game_module_player_damage_grief_callback( einflictor, eattacker, idamage, idflags, smeansofdeath, sweapon, vpoint, vdir, shitloc, psoffsettime )
+{
+	if ( isdefined( eattacker ) && isplayer( eattacker ) && eattacker != self && eattacker.team != self.team )
+		self applyknockback( idamage, vdir );
 }

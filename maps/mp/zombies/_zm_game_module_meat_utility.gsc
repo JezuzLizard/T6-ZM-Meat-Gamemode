@@ -345,6 +345,7 @@ item_meat_spawn( team )
 	wait 0.1;
 	player._spawning_meat = undefined;
 	level.meat_is_under_the_map = false;
+	level.meat_is_not_in_team_bounds = false;
 }
 
 init_item_meat( gametype )

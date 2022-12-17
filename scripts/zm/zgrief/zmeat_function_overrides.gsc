@@ -167,11 +167,11 @@ update_clientfields_override( player, type_struct )
 	{
 		return;
 	}
-    name = player get_first_active_name( type_struct );
-    player setclientfieldtoplayer( type_struct.cf_slot_name, type_struct.info[name].slot_index );
+	name = player get_first_active_name( type_struct );
+	player setclientfieldtoplayer( type_struct.cf_slot_name, type_struct.info[name].slot_index );
 
-    if ( 1 < type_struct.cf_lerp_bit_count )
-        player setclientfieldtoplayer( type_struct.cf_lerp_name, type_struct.info[name].state.players[player._player_entnum].lerp );
+	if ( 1 < type_struct.cf_lerp_bit_count )
+		player setclientfieldtoplayer( type_struct.cf_lerp_name, type_struct.info[name].state.players[player._player_entnum].lerp );
 }
 
 watch_rampage_bookmark_override()

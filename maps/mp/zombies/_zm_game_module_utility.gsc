@@ -131,9 +131,6 @@ meat_score_axis_icon()
 
 show_grief_hud_msg( msg, msg_parm, offset, delay )
 {
-	if( !level.grief_gamerules[ "grief_messages" ].current )
-		return;
-
 	if(!isDefined(delay))
 	{
 		self notify( "show_grief_hud_msg" );
@@ -270,7 +267,7 @@ move_ring( ring )
 		positions = array_randomize( positions );
 		foreach ( position in positions )
 		{
-			self moveto( position.origin, randomintrange( 30, 45 ) );
+			self moveto( position.origin, randomintrange( 15, 23 ) );
 
 			self waittill( "movedone" );
 		}
@@ -322,7 +319,7 @@ add_point_to_meat_team_bounds( team, point )
 	{
 		level.meat_team_bounds[ team ] = [];
 	}
-	level.meat_team_bounds[ team ][ level.meat_team_bounds.size ] = point;
+	level.meat_team_bounds[ team ][ level.meat_team_bounds[ team ].size ] = point;
 }
 
 on_line( line, point )

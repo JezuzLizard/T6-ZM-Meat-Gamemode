@@ -5,6 +5,7 @@
 #include maps\mp\zm_transit_utility;
 #include maps\mp\gametypes_zm\_zm_gametype;
 #include maps\mp\zombies\_zm_game_module_meat_utility;
+#include maps\mp\zombies\_zm_game_module_utility;
 #include scripts\zm\zm_transit_meat_tunnel;
 #include scripts\zm\zm_transit_meat_town;
 #include scripts\zm\zm_transit_meat_farm;

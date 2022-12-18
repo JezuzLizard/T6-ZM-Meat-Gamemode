@@ -53,6 +53,7 @@ main()
 	level._game_module_player_damage_grief_callback = ::game_module_player_damage_grief_callback;
 	level.zm_mantle_over_40_move_speed_override = ::handle_super_sprint_mantle;
 	level.no_end_game_check = true;
+	level.no_board_repair = true;
 	level._game_module_game_end_check = ::always_false;
 	level.custom_end_screen = ::custom_end_screen;
 	//level.check_valid_spawn_override = ::meat_check_valid_spawn_override;

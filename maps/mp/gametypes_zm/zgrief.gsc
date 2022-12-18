@@ -911,7 +911,7 @@ spawn_meat_zombies()
 	force_riser = 0;
 	force_chaser = 0;
 	num = 0;
-	max_ai_num = 24;
+	level.meat_bus_sprinter_max = 1;
 	flag_wait( "initial_blackscreen_passed" );
 	level waittill( "meat_assigned_to_team" );
 	while ( true )
@@ -923,28 +923,65 @@ spawn_meat_zombies()
 		}
 		flag_wait( "spawn_zombies" );
 		ai = getaiarray( level.zombie_team );
-		if ( ai.size > max_ai_num )
-			wait 0.1;
-		else
+		if ( ai.size > getDvarIntDefault( "zmeat_max_zombies", 24 ) )
 		{
-			side = level._meat_on_team;
-			if ( !isDefined( side ) )
+			continue;
+		}
+		players = getPlayers();
+		level.meat_bus_sprinter_max = int( ceil( players.size / 2 ) );
+		side = level._meat_on_team;
+		if ( !isDefined( side ) )
+		{
+			side = level.meat_starting_team;
+		}
+		spawn_points = array_randomize( level._zmeat_zombie_spawn_locations[ side ] );
+
+		zombie = spawn_meat_zombie( random( level.meat_spawners ), "meat_zombie", spawn_points[ 0 ], level._meat_zombie_spawn_health );
+
+		if ( isdefined( zombie ) )
+		{
+			if ( count_bus_sprinters() < level.meat_bus_sprinter_max )
 			{
-				side = level.meat_starting_team;
+				zombie.is_bus_sprinter = true;
+				zombie thread set_melee_damage_after_time( 1 );
+				zombie make_bus_sprinter_after_time( 0.1 );
 			}
-			spawn_points = array_randomize( level._zmeat_zombie_spawn_locations[ side ] );
-
-			zombie = spawn_meat_zombie( level.meat_spawners[ 0 ], "meat_zombie", spawn_points[ 0 ], level._meat_zombie_spawn_health );
-
-			if ( isdefined( zombie ) )
-				zombie thread make_super_sprinter_after_time( 0.1 );
+			else 
+			{
+				zombie make_super_sprinter_after_time( 0.1 );
+			}
 		}
 	}
 }
 
+set_melee_damage_after_time( time )
+{
+	self endon( "death" );
+	wait time;
+	self.meleedamage = 20;
+}
+
+count_bus_sprinters()
+{
+	zombies = getaiarray( level.zombie_team );
+
+	count = 0;
+	if ( isdefined( zombies ) && zombies.size > 0 )
+	{	
+		for ( i = 0; i < zombies.size; i++ )
+		{
+			if ( is_true( zombies[ i ].is_bus_sprinter ) )
+			{
+				count++;
+			}
+		}
+	}
+	return count;
+}
+
 spawn_meat_zombie( spawner, target_name, spawn_point, round_number )
 {
-	level endon( "meat_end" );
+	level endon( "end_game" );
 
 	if ( !isdefined( spawner ) )
 	{
@@ -969,6 +1006,12 @@ make_super_sprinter_after_time( time )
 {
 	wait time;
 	self maps\mp\zombies\_zm_game_module::make_supersprinter();
+}
+
+make_bus_sprinter_after_time( time )
+{
+	wait time;
+	self set_zombie_run_cycle( "chase_bus" );
 }
 
 monitor_meat_on_team()

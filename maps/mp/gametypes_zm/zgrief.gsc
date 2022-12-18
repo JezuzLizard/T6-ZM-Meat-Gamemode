@@ -1989,10 +1989,6 @@ watch_meat_in_map()
 			level.the_meat thread check_meat_is_back_in_bounds();
 			level.the_meat waittill_any_timeout( time, "stationary", "death", "in_bounds" );
 		}
-		if ( true )
-		{
-			continue;
-		}
 		first_team_to_check = ( cointoss() ? "A" : "B" );
 		//first_team_to_check = "A";
 		second_team_to_check = get_other_encounters_team( first_team_to_check );

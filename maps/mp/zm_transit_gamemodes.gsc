@@ -403,35 +403,35 @@ create_meat_playable_bounds_polygon()
 	add_point_to_meat_playable_bounds( ( 1752.14, -834.464, -41.517 ) ); //B side start of fence after trash can
 	add_point_to_meat_playable_bounds( ( 1759.86, -976.031, -33.106 ) ); //B side front of white car
 	add_point_to_meat_playable_bounds( ( 1493.02, -974.125, -55.5443 ) ); //B side end of barrier leading to olympia
-	add_point_to_meat_playable_bounds( ( 1281.61, -851.359, -55.9603 ) ) //B side end of minivan
+	add_point_to_meat_playable_bounds( ( 1281.61, -851.359, -55.9603 ) ); //B side end of minivan
 }
 
 create_meat_team_b_bounds()
 {
-	next_point1 = get_next_point( ( 1107.11, -4.23206, -40.7551 ), ( 0, 35, 0 ), 10 ); //B side start of barrier near door
-	next_point2 = get_next_point( ( 1505.59, -518.493, -67.875 ), ( 0, 35, 0 ), 10 ); //B side end of barrier near packapunch
-	add_point_to_meat_team_bounds( "B", next_point1 ); 
-	add_point_to_meat_team_bounds( "B", next_point2 ); 
 	add_point_to_meat_team_bounds( "B", ( 1167.49, -851.359, -55.875 ) ); //B side corner by the juggernog drop off
 	add_point_to_meat_team_bounds( "B", ( 970.992, -671.408, -55.875 ) ); //B side at corner of bench across from car and at start of barrier
 	add_point_to_meat_team_bounds( "B", ( 1008.45, -423.233, -61.875 ) ); //B side at point where car and barrier meet
 	add_point_to_meat_team_bounds( "B", ( 1083.85, -388.273, -61.875 ) ); //B side back right corner of car
 	add_point_to_meat_team_bounds( "B", ( 957.55, -158.449, -55.875 ) ); //B side left side of door
+	next_point1 = get_next_point( ( 1107.11, -4.23206, -40.7551 ), ( 0, 35, 0 ), 15 ); //B side start of barrier near door
+	add_point_to_meat_team_bounds( "B", next_point1 ); 
+	next_point2 = get_next_point( ( 1505.59, -518.493, -67.875 ), ( 0, 35, 0 ), 15 ); //B side end of barrier near packapunch
+	add_point_to_meat_team_bounds( "B", next_point2 ); 
 	add_point_to_meat_team_bounds( "B", ( 1469.37, -519.267, -67.875 ) ); //B side end of packapunch fence
 	add_point_to_meat_team_bounds( "B", ( 1448.1, -568.906, -60.3131 ) ); //B side end of packapunch fence other side of fence
 	add_point_to_meat_team_bounds( "B", ( 1559.91, -588.597, -48.1473 ) ); //B side start of packapunch fence opposite side against edge of barrier
 	add_point_to_meat_team_bounds( "B", ( 1752.14, -834.464, -41.517 ) ); //B side start of fence after trash can
 	add_point_to_meat_team_bounds( "B", ( 1759.86, -976.031, -33.106 ) ); //B side front of white car
 	add_point_to_meat_team_bounds( "B", ( 1493.02, -974.125, -55.5443 ) ); //B side end of barrier leading to olympia
-	add_point_to_meat_team_bounds( "B", ( 1281.61, -851.359, -55.9603 ) ) //B side end of minivan
+	add_point_to_meat_team_bounds( "B", ( 1281.61, -851.359, -55.9603 ) ); //B side end of minivan
 }
 
 create_meat_team_a_bounds()
 {
-	next_point1 = get_next_point( ( 1135.11, 25.7226, -40.4254 ),  (0, -145, 0 ), 10 ); //A side start of barrier near door
-	next_point2 = get_next_point( ( 1557.17, -517.947, -67.875 ), ( 0, -145, 0 ), 10 ); //A side end of barrier near packapunch
-	add_point_to_meat_team_bounds( "B", next_point1 ); 
-	add_point_to_meat_team_bounds( "B", next_point2 ); 
+	next_point2 = get_next_point( ( 1557.17, -517.947, -67.875 ), ( 0, -145, 0 ), 15 ); //A side end of barrier near packapunch
+	add_point_to_meat_team_bounds( "A", next_point2 ); 
+	next_point1 = get_next_point( ( 1135.11, 25.7226, -40.4254 ),  (0, -145, 0 ), 15 ); //A side start of barrier near door
+	add_point_to_meat_team_bounds( "A", next_point1 ); 
 	add_point_to_meat_team_bounds( "A", ( 1139.64, 225.526, -39.875 ) ); //A side start of barrier near side lava pit
 	add_point_to_meat_team_bounds( "A", ( 1736.69, 57.4286, -55.875 ) ); //A side end of barrier next to corner of bench
 	add_point_to_meat_team_bounds( "A", ( 1748.34, -70.6925, -47.0221 ) ); //A side end of bench

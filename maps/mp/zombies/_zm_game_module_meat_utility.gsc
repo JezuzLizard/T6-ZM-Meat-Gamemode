@@ -448,6 +448,38 @@ get_other_encounters_team( encounters_team )
 	return encounters_team == "A" ? "B" : "A";
 }
 
+zombie_goto_round( target_round )
+{
+	level notify( "restart_round" );
+
+	if ( target_round < 1 )
+		target_round = 1;
+
+	level.zombie_total = 0;
+	maps\mp\zombies\_zm::ai_calculate_health( target_round );
+	zombies = get_round_enemy_array();
+
+	if ( isdefined( zombies ) )
+	{
+		for ( i = 0; i < zombies.size; i++ )
+			zombies[i] dodamage( zombies[i].health + 666, zombies[i].origin );
+	}
+
+	respawn_players();
+}
+
+respawn_players()
+{
+	players = getPlayers();
+
+	foreach ( player in players )
+	{
+		player [[ level.spawnplayer ]]();
+		player freezeControls( true );
+		player enableInvulnerability();
+	}
+}
+
 last_team_to_touch_the_meat()
 {
 

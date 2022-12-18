@@ -112,10 +112,8 @@ zmeat_town_main()
 	level._meat_location = "town";	
 	//level._meat_start_point = random(getstructarray("meat_2_spawn_points","targetname")).origin;//(4352, -13824, 224);
 	level._meat_start_points = [];
-	level._meat_start_points[ "A" ] = ( 1189.16, -514.579, -56.875 );
-	level._meat_start_points[ "B" ] = ( 1648.84, -319.649, -56.875 );
-	level._meat_team_1_zombie_spawn_points = getstructarray("meat_2_team_1_zombie_spawn_points","targetname");
-	level._meat_team_2_zombie_spawn_points = getstructarray("meat_2_team_2_zombie_spawn_points","targetname");
+	level._meat_start_points[ "B" ] = ( 1189.16, -514.579, -56.875 );
+	level._meat_start_points[ "A" ] = ( 1648.84, -319.649, -56.875 );
 	register_zmeat_riser_location( ( 1583.74, 665.528, -61.875 ), "A" );
 	register_zmeat_riser_location( ( 1239.35, 641.686, -55.875 ), "A" );
 	register_zmeat_riser_location( ( 1933.47, -525.591, -61.875 ), "A" );
@@ -137,7 +135,7 @@ zmeat_town_main()
 	level.zombie_vars["zombie_intermission_time"] = 5;
 	level._supress_survived_screen = 1;
 	level thread maps\mp\gametypes_zm\zmeat::item_meat_clear();
-	spawn_player_barriers();
+	level thread spawn_player_barriers();
 }
 
 town_meat_intermission()
@@ -203,31 +201,68 @@ setup_standard_objects_override( location )
 
 spawn_player_barriers()
 {
-	if ( !getDvarIntDefault( "zmeat_spawn_barriers", 1 ) )
+	while ( !getDvarIntDefault( "zmeat_spawn_barriers", 1 ) )
+		wait 1;
+
+	collision_group1 = [];
+	initial_point = ( 1131.64, 248.733, -39.875 );
+	collision_group1_angles = ( 0, -15.7128, 0 );
+	start_point = get_next_point( initial_point, collision_group1_angles, 256 );
+	collision_group1[ 0 ] = spawn( "script_model", start_point );	
+	collision_group1[ 0 ] setModel( "collision_player_wall_512x512x10" );
+	collision_group1[ 0 ].angles = collision_group1_angles;
+	collision_group1[ 1 ] = spawn( "script_model", get_next_point( start_point, collision_group1_angles, 512 ) );	
+	collision_group1[ 1 ] setModel( "collision_player_wall_512x512x10" );
+	collision_group1[ 1 ].angles = collision_group1_angles;
+	
+	barrier_group1 = [];
+	next_point = undefined;
+	initial_point = ( 1131.64, 248.733, -55.875 );
+	for ( i = 0; i < 7; i++ )
 	{
-		return;
+		distance_apart = 96;
+		if ( i == 0 )
+		{
+			next_point = get_next_point( initial_point, collision_group1_angles, ( i + 1 ) * ( distance_apart / 2 ) );
+		}
+		else 
+			next_point = get_next_point( next_point, collision_group1_angles, distance_apart );
+		
+		barrier_group1[ i ] = spawn( "script_model", next_point );
+		barrier_group1[ i ] setModel( "p6_zm_barrier_pedestrian" );
+		barrier_group1[ i ].angles = collision_group1_angles;
 	}
-	collision_middle1 = spawn( "script_model", ( 1188.43, -64.4402, -55.875 ) );
-	collision_middle1 setModel( "collision_player_wall_512x512x10" );
-	collision_middle1.angles = ( 0, -138 + 90, 0 );
-	collision_middle2 = spawn( "script_model", ( 1396.48, -335.717, -67.875 ) );
-	collision_middle2 setModel( "collision_player_wall_512x512x10" );
-	collision_middle2.angles = ( 0, -139 + 90, 0 );
-	collision_middle3 = spawn( "script_model", ( 1493.65, -471.943, -67.875 ) );
-	collision_middle3 setModel( "collision_player_wall_512x512x10" );
-	collision_middle3.angles = ( 0, -149 + 90, 0 );
-	collision_middle4 = spawn( "script_model", ( 1751.49, -492.548, -58.1949 ) );
-	collision_middle4 setModel( "collision_player_wall_512x512x10" );
-	collision_middle4.angles = ( 0, 178 + 90, 0 );
-	collision_middle5 = spawn( "script_model", ( 1544.17, 451.856, -61.875 ) );
-	collision_middle5 setModel( "collision_player_wall_512x512x10" );
-	collision_middle5.angles = ( 0, -101 + 90, 0 );
-	collision_middle6 = spawn( "script_model", ( 1059.43, -546.414, -61.875 ) );
-	collision_middle6 setModel( "collision_player_wall_512x512x10" );
-	collision_middle6.angles = ( 0, -3 + 90, 0 );
-	collision_middle7 = spawn( "script_model", ( 1527.66, -1025.5, -46.03 ) );
-	collision_middle7 setModel( "collision_player_wall_512x512x10" );
-	collision_middle7.angles = ( 0, 81 + 90, 0 );
+	/*
+	collisions = [];
+	collisions[ 0 ] = spawn( "script_model", ( 1188.43, -64.4402, -55.875 ) );
+	collisions[ 0 ] setModel( "collision_player_wall_512x512x10" );
+	collisions[ 0 ].angles = ( 0, -138 + 90, 0 );
+	collisions[ 1 ] = spawn( "script_model", ( 1396.48, -335.717, -67.875 ) );
+	collisions[ 1 ] setModel( "collision_player_wall_512x512x10" );
+	collisions[ 1 ].angles = ( 0, -139 + 90, 0 );
+	collisions[ 2 ] = spawn( "script_model", ( 1493.65, -471.943, -67.875 ) );
+	collisions[ 2 ] setModel( "collision_player_wall_512x512x10" );
+	collisions[ 2 ].angles = ( 0, -149 + 90, 0 );
+	collisions[ 3 ] = spawn( "script_model", ( 1751.49, -492.548, -58.1949 ) ); //back of A team side opposite the middle barrier
+	collisions[ 3 ] setModel( "collision_player_wall_512x512x10" );
+	collisions[ 3 ].angles = ( 0, 178 + 90, 0 );
+	collisions[ 4 ] = spawn( "script_model", ( 1544.17, 451.856, -61.875 ) );
+	collisions[ 4 ] setModel( "collision_player_wall_512x512x10" );
+	collisions[ 4 ].angles = ( 0, -101 + 90, 0 );
+	collisions[ 5 ] = spawn( "script_model", ( 1059.43, -546.414, -61.875 ) ); //back of B team side opposite the middle barrier
+	collisions[ 5 ] setModel( "collision_player_wall_512x512x10" );
+	collisions[ 5 ].angles = ( 0, -3 + 90, 0 );
+	collisions[ 6 ] = spawn( "script_model", ( 1527.66, -1025.5, -46.03 ) ); //right side of B team
+	collisions[ 6 ] setModel( "collision_player_wall_512x512x10" );
+	collisions[ 6 ].angles = ( 0, 81 + 90, 0 );
+	barriers = [];
+	for ( i = 0; i < collisions.size; i++ )
+	{
+		barriers[ i ] = spawn( "script_model", collisions[ i ].origin );
+		barriers[ i ] setModel( "p6_zm_barrier_pedestrian" );
+		barriers[ i ].angles = collisions[ i ].angles;
+	}
+	*/
 }
 
 register_zmeat_riser_location( origin, side )

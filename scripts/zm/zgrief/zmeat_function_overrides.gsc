@@ -125,7 +125,11 @@ print_origin()
 	{
 		if ( self meleeButtonPressed() )
 		{
-			logprint( self.origin + "\n" );
+			logprint( "origin: " + self.origin + "\n" );
+			logprint( "angles: " + self.angles + "\n" );
+			logprint( "anglestoforward: " + anglesToForward( self.angles ) + "\n" );
+			while ( self meleeButtonPressed() )
+				wait 0.05;
 		}
 		wait 0.05;
 	}

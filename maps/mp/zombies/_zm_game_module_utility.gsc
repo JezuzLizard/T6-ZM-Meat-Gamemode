@@ -443,3 +443,14 @@ check_point_is_in_polygon( polygon, point )
 		return false;
 	}
 }
+
+get_next_point( vector, angles, num )
+{
+	angles_to_forward = anglestoforward( angles );
+
+	x = vector[ 0 ] + num * angles_to_forward[ 0 ];
+	y = vector[ 1 ] + num * angles_to_forward[ 1 ];
+	final_vector = ( x, y, vector[ 2 ] );
+	//logprint( "final_vector: " + final_vector + " vector: " + vector + " angles: " + angles + " angles_to_forward: " + angles_to_forward + " num: " + num + "\n" );
+	return final_vector;
+}

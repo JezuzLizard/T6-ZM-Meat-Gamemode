@@ -102,7 +102,10 @@ register_map_initial_spawnpoint( spawnpoint_coordinates, spawnpoint_angles, scri
 
 zmeat_town_precache()
 {
-
+	precacheModel( "collision_player_wall_512x512x10" );
+	precacheModel( "p6_zm_barrier_pedestrian" );
+	precacheModel( "collision_player_wall_128x128x10" );
+	precacheModel( "collision_player_wall_256x256x10" );
 }
 
 zmeat_town_main()
@@ -152,10 +155,18 @@ setup_standard_objects_override( location )
 		if ( isdefined( struct.script_noteworthy ) && struct.script_noteworthy != location )
 			continue;
 
-		if ( isDefined( struct.script_parameters ) && struct.script_parameters == "p6_zm_scoreboard_on" )
+		if ( isDefined( struct.script_parameters ) )
 		{
-			continue;
+			if ( struct.script_parameters == "p6_zm_barrier_pedestrian" || struct.script_parameters == "p6_zm_barrier_pedestrian_grp" )
+			{
+				continue;
+			}
+			if ( struct.script_parameters == "p6_zm_scoreboard_on" )
+			{
+				continue;
+			}
 		}
+
 		if ( isdefined( struct.script_string ) )
 		{
 			keep = 0;
@@ -204,6 +215,9 @@ spawn_player_barriers()
 	while ( !getDvarIntDefault( "zmeat_spawn_barriers", 1 ) )
 		wait 1;
 
+	/*
+		Side A next to the right most lava pit begin
+	*/
 	collision_group1 = [];
 	initial_point = ( 1131.64, 248.733, -39.875 );
 	collision_group1_angles = ( 0, -15.7128, 0 );
@@ -222,9 +236,7 @@ spawn_player_barriers()
 	{
 		distance_apart = 96;
 		if ( i == 0 )
-		{
-			next_point = get_next_point( initial_point, collision_group1_angles, ( i + 1 ) * ( distance_apart / 2 ) );
-		}
+			next_point = get_next_point( initial_point, collision_group1_angles, distance_apart / 2 );
 		else 
 			next_point = get_next_point( next_point, collision_group1_angles, distance_apart );
 		
@@ -232,6 +244,90 @@ spawn_player_barriers()
 		barrier_group1[ i ] setModel( "p6_zm_barrier_pedestrian" );
 		barrier_group1[ i ].angles = collision_group1_angles;
 	}
+
+	/*
+		Side A behind the center lava pit between two cars begin
+	*/
+	collision_group2 = [];
+	initial_point = ( 1728.35, -540.213, -55.1496 );
+	collision_group2_angles = ( 0, 90.5328, 0 );
+	start_point = get_next_point( initial_point, collision_group2_angles, 64 );
+	collision_group2[ 0 ] = spawn( "script_model", start_point );
+	collision_group2[ 0 ] setModel( "collision_player_wall_128x128x10" );
+	collision_group2[ 0 ].angles = collision_group2_angles;
+	barrier_group2 = [];
+	barrier_group2[ 0 ] = spawn( "script_model", start_point );
+	barrier_group2[ 0 ] setModel( "p6_zm_barrier_pedestrian" );
+	barrier_group2[ 0 ].angles = collision_group2_angles;
+
+	/* 
+		Side B between gap before olympia wallbuy begin
+	*/
+	collision_group3 = [];
+	initial_point = ( 1622.55, -1014.79, -42.4881 );
+	collision_group3_angles = ( 0, 170.475, 0 );
+	start_point = get_next_point( initial_point, collision_group3_angles, 64 );
+	collision_group3[ 0 ] = spawn( "script_model", start_point );
+	collision_group3[ 0 ] setModel( "collision_player_wall_128x128x10" );
+	collision_group3[ 0 ].angles = collision_group3_angles;
+	barrier_group3 = [];
+	barrier_group3[ 0 ] = spawn( "script_model", start_point );
+	barrier_group3[ 0 ] setModel( "p6_zm_barrier_pedestrian" );
+	barrier_group3[ 0 ].angles = collision_group3_angles;
+
+	/*
+		Side B behind the center lava pit between a car and a bench begin
+	*/
+
+	collision_group4 = [];
+	initial_point = ( 956.384, -659.012, -55.875 );
+	collision_group4_angles = ( 0, 82.4414, 0 );
+	start_point = get_next_point( initial_point, collision_group4_angles, 128 );
+	collision_group4[ 0 ] = spawn( "script_model", start_point );
+	collision_group4[ 0 ] setModel( "collision_player_wall_256x256x10" );
+	collision_group4[ 0 ].angles = collision_group4_angles;
+	barrier_group4 = [];
+	for ( i = 0; i < 3; i++ )
+	{
+		distance_apart = 96;
+		if ( i == 0 )
+			next_point = get_next_point( initial_point, collision_group4_angles, distance_apart / 2 );
+		else 
+			next_point = get_next_point( next_point, collision_group4_angles, distance_apart );
+		
+		barrier_group4[ i ] = spawn( "script_model", next_point );
+		barrier_group4[ i ] setModel( "p6_zm_barrier_pedestrian" );
+		barrier_group4[ i ].angles = collision_group4_angles;
+	}
+	
+	/*
+		Middle barrier separating sides
+	*/
+
+	collision_group5 = [];
+	initial_point = ( 1120.58, 11.8504, -67.875 );
+	collision_group5_angles = ( 0, -52.229, 0 );
+	start_point = get_next_point( initial_point, collision_group5_angles, 256 );
+	collision_group5[ 0 ] = spawn( "script_model", start_point );	
+	collision_group5[ 0 ] setModel( "collision_player_wall_512x512x10" );
+	collision_group5[ 0 ].angles = collision_group5_angles;
+	collision_group5[ 1 ] = spawn( "script_model", get_next_point( start_point, collision_group5_angles, 512 ) );	
+	collision_group5[ 1 ] setModel( "collision_player_wall_512x512x10" );
+	collision_group5[ 1 ].angles = collision_group5_angles;
+	barrier_group5 = [];
+	for ( i = 0; i < 10; i++ )
+	{
+		distance_apart = 98;
+		if ( i == 0 )
+			next_point = get_next_point( initial_point, collision_group5_angles, distance_apart / 2 );
+		else 
+			next_point = get_next_point( next_point, collision_group5_angles, distance_apart );
+		
+		barrier_group5[ i ] = spawn( "script_model", next_point );
+		barrier_group5[ i ] setModel( "p6_zm_barrier_pedestrian" );
+		barrier_group5[ i ].angles = collision_group5_angles;
+	}
+
 	/*
 	collisions = [];
 	collisions[ 0 ] = spawn( "script_model", ( 1188.43, -64.4402, -55.875 ) );

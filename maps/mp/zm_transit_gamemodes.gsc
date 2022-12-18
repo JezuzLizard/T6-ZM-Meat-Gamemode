@@ -400,82 +400,45 @@ create_meat_playable_bounds_polygon()
 	add_point_to_meat_playable_bounds( ( 1469.37, -519.267, -67.875 ) ); //B side end of packapunch fence
 	add_point_to_meat_playable_bounds( ( 1448.1, -568.906, -60.3131 ) ); //B side end of packapunch fence other side of fence
 	add_point_to_meat_playable_bounds( ( 1559.91, -588.597, -48.1473 ) ); //B side start of packapunch fence opposite side against edge of barrier
-	add_point_to_meat_playable_bounds
-	add_point_to_meat_playable_bounds
-	/*
-	add_point_to_meat_playable_bounds( ( 1173.28, -843.642, -55.875 ) );
-	add_point_to_meat_playable_bounds( ( 1086.71, -738.547, -55.875 ) );
-	connect_point_on_polygon( ( 1173.28, -843.642, -55.875 ), ( 1086.71, -738.547, -55.875 ) );
-
-	add_point_to_meat_playable_bounds( ( 1073.83, -369.226, -61.875 ) );
-	connect_point_on_polygon( ( 1086.71, -738.547, -55.875 ), ( 1073.83, -369.226, -61.875 ) );
-
-	add_point_to_meat_playable_bounds( ( 968.069, -136.957, -48.121 ) );
-	connect_point_on_polygon( ( 1073.83, -369.226, -61.875 ), ( 968.069, -136.957, -48.121 ) );
-
-	add_point_to_meat_playable_bounds( ( 1130.38, 21.0768, -40.4399 ) );
-	connect_point_on_polygon( ( 968.069, -136.957, -48.121 ), ( 1130.38, 21.0768, -40.4399 ) );
-
-	add_point_to_meat_playable_bounds( ( 1131.93, 248.836, -39.875 ) );
-	connect_point_on_polygon( ( 1130.38, 21.0768, -40.4399 ), ( 1131.93, 248.836, -39.875 ) );
-
-	add_point_to_meat_playable_bounds( ( 1395.27, 329.722, -61.875 ) );
-	connect_point_on_polygon( ( 1131.93, 248.836, -39.875 ), ( 1395.27, 329.722, -61.875 ) );
-
-	add_point_to_meat_playable_bounds( ( 1746.36, 262.378, -55.875 ) );
-	connect_point_on_polygon( ( 1395.27, 329.722, -61.875 ), ( 1746.36, 262.378, -55.875 ) );
-
-	add_point_to_meat_playable_bounds( ( 1728.88, -327.603, -61.875 ) );
-	connect_point_on_polygon( ( 1746.36, 262.378, -55.875 ), ( 1728.88, -327.603, -61.875 ) );
-
-	add_point_to_meat_playable_bounds( ( 1696.27, -404.117, -60.0451 ) );
-	connect_point_on_polygon( ( 1728.88, -327.603, -61.875 ), ( 1696.27, -404.117, -60.0451 ) );
-
-	add_point_to_meat_playable_bounds( ( 1693.15, -560.723, -49.4247 ) );
-	connect_point_on_polygon( ( 1696.27, -404.117, -60.0451 ), ( 1693.15, -560.723, -49.4247 ) );
-
-	add_point_to_meat_playable_bounds( ( 1622.8, -723.422, -54.3495 ) );
-	connect_point_on_polygon( ( 1693.15, -560.723, -49.4247 ), ( 1622.8, -723.422, -54.3495 ) );
-
-	add_point_to_meat_playable_bounds( ( 1638.99, -1004.68, -61.875 ) );
-	connect_point_on_polygon( ( 1622.8, -723.422, -54.3495 ), ( 1638.99, -1004.68, -61.875 ) );
-
-	add_point_to_meat_playable_bounds( ( 1504.55, -985.215, -52.3769 ) );
-	connect_point_on_polygon( ( 1638.99, -1004.68, -61.875 ), ( 1504.55, -985.215, -52.3769 ) );
-
-	add_point_to_meat_playable_bounds( ( 1371.13, -854.452, -61.1272 ) );
-	connect_point_on_polygon( ( 1504.55, -985.215, -52.3769 ), ( 1371.13, -854.452, -61.1272 ) );
-
-	connect_point_on_polygon( ( 1371.13, -854.452, -61.1272 ), ( 1086.71, -738.547, -55.875 ) );
-	*/
+	add_point_to_meat_playable_bounds( ( 1752.14, -834.464, -41.517 ) ); //B side start of fence after trash can
+	add_point_to_meat_playable_bounds( ( 1759.86, -976.031, -33.106 ) ); //B side front of white car
+	add_point_to_meat_playable_bounds( ( 1493.02, -974.125, -55.5443 ) ); //B side end of barrier leading to olympia
+	add_point_to_meat_playable_bounds( ( 1281.61, -851.359, -55.9603 ) ) //B side end of minivan
 }
 
 create_meat_team_b_bounds()
 {
-	/*
-	add_point_to_meat_team_bounds( "B", ( 1173.28, -843.642, -55.875 ) );
-	add_point_to_meat_team_bounds( "B", ( 1086.71, -738.547, -55.875 ) );
-	add_point_to_meat_team_bounds( "B", ( 1073.83, -369.226, -61.875 ) );
-	add_point_to_meat_team_bounds( "B", ( 968.069, -136.957, -48.121 ) );
-	add_point_to_meat_team_bounds( "B", ( 1119.21, 6.4052, -40.8399 ) );
-	add_point_to_meat_team_bounds( "B", ( 1754.84, -826.26, -43.7537 ) );
-	add_point_to_meat_team_bounds( "B", ( 1759.86, -975.278, -32.7789 ) );
-	add_point_to_meat_team_bounds( "B", ( 1493.68, -978.587, -55.3623 ) );
-	add_point_to_meat_team_bounds( "B", ( 1354.83, -851.359, -61.2965 ) );
-	*/
+	next_point1 = get_next_point( ( 1107.11, -4.23206, -40.7551 ), ( 0, 35, 0 ), 10 ); //B side start of barrier near door
+	next_point2 = get_next_point( ( 1505.59, -518.493, -67.875 ), ( 0, 35, 0 ), 10 ); //B side end of barrier near packapunch
+	add_point_to_meat_team_bounds( "B", next_point1 ); 
+	add_point_to_meat_team_bounds( "B", next_point2 ); 
+	add_point_to_meat_team_bounds( "B", ( 1167.49, -851.359, -55.875 ) ); //B side corner by the juggernog drop off
+	add_point_to_meat_team_bounds( "B", ( 970.992, -671.408, -55.875 ) ); //B side at corner of bench across from car and at start of barrier
+	add_point_to_meat_team_bounds( "B", ( 1008.45, -423.233, -61.875 ) ); //B side at point where car and barrier meet
+	add_point_to_meat_team_bounds( "B", ( 1083.85, -388.273, -61.875 ) ); //B side back right corner of car
+	add_point_to_meat_team_bounds( "B", ( 957.55, -158.449, -55.875 ) ); //B side left side of door
+	add_point_to_meat_team_bounds( "B", ( 1469.37, -519.267, -67.875 ) ); //B side end of packapunch fence
+	add_point_to_meat_team_bounds( "B", ( 1448.1, -568.906, -60.3131 ) ); //B side end of packapunch fence other side of fence
+	add_point_to_meat_team_bounds( "B", ( 1559.91, -588.597, -48.1473 ) ); //B side start of packapunch fence opposite side against edge of barrier
+	add_point_to_meat_team_bounds( "B", ( 1752.14, -834.464, -41.517 ) ); //B side start of fence after trash can
+	add_point_to_meat_team_bounds( "B", ( 1759.86, -976.031, -33.106 ) ); //B side front of white car
+	add_point_to_meat_team_bounds( "B", ( 1493.02, -974.125, -55.5443 ) ); //B side end of barrier leading to olympia
+	add_point_to_meat_team_bounds( "B", ( 1281.61, -851.359, -55.9603 ) ) //B side end of minivan
 }
 
 create_meat_team_a_bounds()
 {
-	/*
-	add_point_to_meat_team_bounds( "A", ( 1134.04, 23.3812, -40.5558 ) );
-	add_point_to_meat_team_bounds( "A", ( 1533.33, -518.199, -67.875 ) );
-	add_point_to_meat_team_bounds( "A", ( 1623.62, -522.479, -53.1751 ) );
-	add_point_to_meat_team_bounds( "A", ( 1694.36, -564.124, -49.2267 ) );
-	add_point_to_meat_team_bounds( "A", ( 1699.95, -394.593, -60.5192 ) );
-	add_point_to_meat_team_bounds( "A", ( 1766.36, 238.359, -55.875 ) );
-	add_point_to_meat_team_bounds( "A", ( 1672.05, 279.028, -55.875 ) );
-	add_point_to_meat_team_bounds( "A", ( 1388.67, 338.737, -61.875 ) );
-	add_point_to_meat_team_bounds( "A", ( 1131.64, 247.65, -39.875 ) );
-	*/
+	next_point1 = get_next_point( ( 1135.11, 25.7226, -40.4254 ),  (0, -145, 0 ), 10 ); //A side start of barrier near door
+	next_point2 = get_next_point( ( 1557.17, -517.947, -67.875 ), ( 0, -145, 0 ), 10 ); //A side end of barrier near packapunch
+	add_point_to_meat_team_bounds( "B", next_point1 ); 
+	add_point_to_meat_team_bounds( "B", next_point2 ); 
+	add_point_to_meat_team_bounds( "A", ( 1139.64, 225.526, -39.875 ) ); //A side start of barrier near side lava pit
+	add_point_to_meat_team_bounds( "A", ( 1736.69, 57.4286, -55.875 ) ); //A side end of barrier next to corner of bench
+	add_point_to_meat_team_bounds( "A", ( 1748.34, -70.6925, -47.0221 ) ); //A side end of bench
+	add_point_to_meat_team_bounds( "A", ( 1776.36, -64.0588, -40.7401 ) ); //A side end of bench against wall
+	add_point_to_meat_team_bounds( "A", ( 1776.25, -147.981, -29.394 ) ); //A side corner of bar outside
+	add_point_to_meat_team_bounds( "A", ( 1815.82, -145.38, -28.4482 ) ); //A side start of fence by bar corner
+	add_point_to_meat_team_bounds( "A", ( 1700.02, -394.447, -60.5263 ) ); //A side end of car and start of barrier
+	add_point_to_meat_team_bounds( "A", ( 1694.36, -594.105, -47.6287 ) ); //A side corner of fence and van near packapunch
+	add_point_to_meat_team_bounds( "A", ( 1618.53, -518.885, -53.836 ) ); //A side end of fence meeting first fence in the center lava pit
 }

@@ -252,9 +252,14 @@ getFreeSpawnpoint_override( spawnpoints, player )
 	{
 		return undefined;
 	}
+	print( "self.spawnpoint_desired_script_int: " + self.spawnpoint_desired_script_int );
 	//If we are using the script_int system to make the starting teams spawn facing each other. 
 	//We only spawn players if their team script_int matches the spawnpoint script_int. 
 	//Treyarch's normal spawnpoints do this to a degree.
+	foreach ( spawnpoint in spawnpoints )
+	{
+		spawnpoint.player_name = undefined;
+	}
 	if ( is_true( level.spawnpoint_system_using_script_ints ) )
 	{
 		foreach ( spawnpoint in spawnpoints )
@@ -344,19 +349,19 @@ menuautoassign_override( comingfrommenu )
 
 			if(teamplayersallies == teamplayersaxis)
 			{
-				assignment = "allies";
+				assignment = "axis";
 				self._encounters_team = "A";
 			}
 			else
 			{
 				if(teamplayersallies > teamplayersaxis)
 				{
-					assignment = "axis";
+					assignment = "allies";
 					self._encounters_team = "B";
 				}
 				else
 				{
-					assignment = "allies";
+					assignment = "axis";
 					self._encounters_team = "A";
 				}
 			}
@@ -376,16 +381,6 @@ menuautoassign_override( comingfrommenu )
 	if ( !isalive( self ) )
 		self.statusicon = "hud_status_dead";
 
-	if ( !isdefined( game["spawns_randomized"] ) )
-	{
-		game["spawns_randomized"] = true;
-		random_chance = randomint( 100 );
-
-		if ( random_chance > 50 )
-			set_game_var( "side_selection", 1 );
-		else
-			set_game_var( "side_selection", 2 );
-	}
 	side_selection = get_game_var( "side_selection" );
 	if ( side_selection == 1 ) 
 	{
@@ -403,7 +398,6 @@ menuautoassign_override( comingfrommenu )
 	}
 
 	self.spawnpoint_desired_script_int = side_selection;
-
 	self notify( "joined_team" );
 	level notify( "joined_team" );
 	self notify( "end_respawn" );

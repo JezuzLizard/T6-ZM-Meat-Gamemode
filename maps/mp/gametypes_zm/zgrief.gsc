@@ -104,7 +104,6 @@ meat_hub_start_func()
 {
 	level.meat_starting_team = ( cointoss() ? "A" : "B" );
 	level thread meat_player_initial_spawn();
-	level thread item_meat_reset( level.meat_starting_team );
 	level thread spawn_meat_zombies();
 	level thread monitor_meat_on_team();
 	level thread init_minigun_ring();
@@ -1249,7 +1248,7 @@ item_meat_watch_trigger( trigger, callback, playersoundonuse, npcsoundonuse )
 	while ( true )
 	{
 		trigger waittill( "usetrigger", player );
-		print( "item_meat_watch_trigger" );
+		//print( "item_meat_watch_trigger" );
 		volley = self.meat_is_flying && player meleebuttonpressed();
 		player.volley_meat = volley;
 
@@ -1282,12 +1281,12 @@ item_meat_watch_trigger( trigger, callback, playersoundonuse, npcsoundonuse )
 
 		if ( volley )
 		{
-			print( "player spiked the meat" );
+			//print( "player spiked the meat" );
 			player thread spike_the_meat( self );
 		}
 		else
 		{
-			print( "player picked up the meat" );
+			//print( "player picked up the meat" );
 			self thread [[ callback ]]( player );
 		}
 	}
@@ -1424,10 +1423,12 @@ assign_meat_to_team( player, encounters_team )
 
 	if ( isdefined( player ) )
 	{
+		//print( "meat assigned to team based on player " + player._encounters_team );
 		meat_team = player._encounters_team;
 	}
 	else if ( isdefined( encounters_team ) )
 	{
+		//Print( "meat assigned to team based on team " + encounters_team );
 		meat_team = encounters_team;
 	}
 	players = getPlayers();
@@ -1470,7 +1471,7 @@ assign_meat_to_team( player, encounters_team )
 	{
 		return;
 	}
-	player._has_meat = 1;
+	player._has_meat = true;
 	player thread slow_down_player_with_meat();
 	player thread reset_meat_when_player_downed();
 	player thread reset_meat_when_player_disconnected();
@@ -1772,6 +1773,11 @@ round_end( winner )
 	}
 	set_game_var( "side_selection", ( get_game_var( "side_selection" ) == 1 ? 2 : 1 ) );
 	side_selection = get_game_var( "side_selection" );
+	set_game_var( "switchedsides", !get_game_var( "switchedsides" ) );
+	//new_array_a = level.meat_team_bounds[ "A" ];
+	//new_array_b = level.meat_team_bounds[ "B" ];
+	//level.meat_team_bounds[ "A" ] = new_array_b;
+	//level.meat_team_bounds[ "B" ] = new_array_a;
 	foreach ( player in players )
 	{
 		if ( side_selection == 1 ) 
@@ -1847,6 +1853,21 @@ game_won( winner )
 start_round()
 {
 	flag_clear( "start_encounters_match_logic" );
+	if ( !isDefined( level.meat_initial_picked ) )
+	{
+		if ( cointoss() )
+		{
+			new_array_a = level.meat_team_bounds[ "A" ];
+			new_array_b = level.meat_team_bounds[ "B" ];
+			level.meat_team_bounds[ "A" ] = new_array_b;
+			level.meat_team_bounds[ "B" ] = new_array_a;
+			set_game_var( "side_selection", 1 );
+		}
+		else
+		{
+			set_game_var( "side_selection", 2 );
+		}
+	}
 	flag_wait( "initial_blackscreen_passed" );
 	if ( !isdefined( level._module_round_hud ) )
 	{
@@ -1893,12 +1914,12 @@ start_round()
 		level thread wait_for_team_death();
 		hud_init();
 		//level thread meat_intro( level._meat_start_points[ level.meat_starting_team ] );
-		level notify( "reset_meat" );
+		level thread item_meat_reset( level.meat_starting_team, true );
 		level.meat_first_round = true;
 	}
 	else 
 	{
-		level.meat_starting_team = get_other_encounters_team( level.meat_starting_team );
+		level.meat_starting_team = ( cointoss() ? "A" : "B" );
 		item_meat_reset( level.meat_starting_team, true );
 	}
 }
@@ -2065,14 +2086,41 @@ check_meat_is_back_in_bounds()
 
 meat_check_valid_spawn_override( player, return_struct )
 {
-	print( player.name + " meat_check_valid_spawn_override() " );
+	//print( player.name + " meat_check_valid_spawn_override() " );
+	structs = getstructarray( "initial_spawn", "script_noteworthy" );
+
+	if ( isdefined( structs ) )
+	{
+		match_string = "";
+		location = level.scr_zm_map_start_location;
+
+		if ( ( location == "default" || location == "" ) && isdefined( level.default_start_location ) )
+			location = level.default_start_location;
+
+		match_string = level.scr_zm_ui_gametype + "_" + location;
+		spawnpoints = [];
+		foreach ( struct in structs )
+		{
+			if ( isdefined( struct.script_string ) )
+			{
+				tokens = strtok( struct.script_string, " " );
+
+				foreach ( token in tokens )
+				{
+					if ( token == match_string )
+						spawnpoints[ spawnpoints.size ] = struct;
+				}
+			}
+		}
+	}
+	spawnpoint = maps\mp\zombies\_zm::getFreeSpawnpoint( spawnpoints, player );
 	if ( return_struct )
 	{
-		return player.spectator_respawn;
+		return spawnpoint;
 	}
 	else 
 	{
-		return player.spectator_respawn.origin;
+		return isDefined( spawnpoint ) ? spawnpoint.origin : undefined;
 	}
 }
 

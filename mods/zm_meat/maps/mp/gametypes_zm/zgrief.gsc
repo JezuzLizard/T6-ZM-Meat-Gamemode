@@ -32,7 +32,7 @@ main()
 	level._effect["fw_pre_burst"] = loadfx( "maps/zombie/fx_zmb_race_fireworks_burst_small" );
 	level._effect["meat_bounce"] = loadfx( "maps/zombie/fx_zmb_meat_collision_glow" );
 	level._effect["ring_glow"] = loadfx( "misc/fx_zombie_powerup_on" );
-	//level.zm_disable_recording_stats = true;
+	level.zm_disable_recording_stats = true;
 	game[ "gamestarted" ] = undefined;
 	level.timelimitoverride = true;
 	maps\mp\gametypes_zm\_zm_gametype::main();

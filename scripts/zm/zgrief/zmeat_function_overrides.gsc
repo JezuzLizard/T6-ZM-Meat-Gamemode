@@ -27,6 +27,7 @@ init()
 	level.autoassign = ::menuautoassign_override;
 	level.callbackactordamage = ::actor_damage_override_wrapper;
 	level.default_solo_laststandpistol = "m1911_zm";
+	level.grenade_safe_to_bounce = ::grenade_safe_to_bounce_override;
 }
 
 actor_damage_override( inflictor, attacker, damage, flags, meansofdeath, weapon, vpoint, vdir, shitloc, psoffsettime, boneindex )
@@ -354,7 +355,7 @@ menuautoassign_override( comingfrommenu )
 			}
 			else
 			{
-				if(teamplayersallies > teamplayersaxis)
+				if(teamplayersallies < teamplayersaxis)
 				{
 					assignment = "allies";
 					self._encounters_team = "B";
@@ -412,5 +413,12 @@ perk_machine_spawn_init_override()
 
 should_delete_zbarriers_override()
 {
+	return true;
+}
+
+grenade_safe_to_bounce_override( player, weapname )
+{
+	if ( !is_offhand_weapon( weapname ) && !is_grenade_launcher( weapname ) )
+		return true;
 	return true;
 }

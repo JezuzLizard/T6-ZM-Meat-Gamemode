@@ -454,3 +454,8 @@ get_next_point( vector, angles, num )
 	//logprint( "final_vector: " + final_vector + " vector: " + vector + " angles: " + angles + " angles_to_forward: " + angles_to_forward + " num: " + num + "\n" );
 	return final_vector;
 }
+
+get_other_team( team )
+{
+	return team == "allies" ? "axis" : "allies";
+}
